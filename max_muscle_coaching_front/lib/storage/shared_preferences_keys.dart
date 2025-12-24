@@ -1,0 +1,13 @@
+const String currentThemeKey = 'current_theme';
+const String darkModeKey = 'dark_mode';
+const String currencyKey = 'currencyCode';
+const String languageCodeKey = 'language_code';
+const String countryCodeKey = 'country_code';
+const String jwtKey = 'jwt';
+const String refreshTokenKey = 'refreshToken';
+const String filterDataKey = 'filter-data';
+const String navigationStackKey = 'stack';
+const String dateFromKey = 'dateFrom';
+const String dateToKey = 'dateTo';
+const String hideDiscountDialog = 'hide_discount_dialog';
+const String rememberScreenKey = 'rememberScreenKey';

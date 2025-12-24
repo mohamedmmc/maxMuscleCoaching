@@ -1,0 +1,136 @@
+
+caddy-config
+caddy-data
+.env
+
+
+max_muscle_coaching_back/node_modules
+max_muscle_coaching_back/.env
+max_muscle_coaching_back/.vscode
+max_muscle_coaching_back/public/images/client
+max_muscle_coaching_back/public/pdf
+max_muscle_coaching_back/public/properties
+
+# Miscellaneous
+max_muscle_coaching_front/*.class
+max_muscle_coaching_front/*.lock
+max_muscle_coaching_front/*.log
+max_muscle_coaching_front/*.pyc
+max_muscle_coaching_front/*.swp
+max_muscle_coaching_front/.DS_Store
+max_muscle_coaching_front/.atom/
+max_muscle_coaching_front/.buildlog/
+max_muscle_coaching_front/.history
+max_muscle_coaching_front/.svn/
+
+# IntelliJ related
+max_muscle_coaching_front/*.iml
+max_muscle_coaching_front/*.ipr
+max_muscle_coaching_front/*.iws
+max_muscle_coaching_front/.idea/
+
+# Visual Studio Code related
+max_muscle_coaching_front/.classpath
+max_muscle_coaching_front/.project
+max_muscle_coaching_front/.settings/
+max_muscle_coaching_front/.vscode/
+.vscode/
+
+# Flutter repo-specific
+max_muscle_coaching_front//bin/cache/
+max_muscle_coaching_front//bin/internal/bootstrap.bat
+max_muscle_coaching_front//bin/internal/bootstrap.sh
+max_muscle_coaching_front//bin/mingit/
+max_muscle_coaching_front//dev/benchmarks/mega_gallery/
+max_muscle_coaching_front//dev/bots/.recipe_deps
+max_muscle_coaching_front//dev/bots/android_tools/
+max_muscle_coaching_front//dev/devicelab/ABresults*.json
+max_muscle_coaching_front//dev/docs/doc/
+max_muscle_coaching_front//dev/docs/flutter.docs.zip
+max_muscle_coaching_front//dev/docs/lib/
+max_muscle_coaching_front//dev/docs/pubspec.yaml
+max_muscle_coaching_front//dev/integration_tests/**/xcuserdata
+max_muscle_coaching_front//dev/integration_tests/**/Pods
+max_muscle_coaching_front//packages/flutter/coverage/
+max_muscle_coaching_front/version
+max_muscle_coaching_front/analysis_benchmark.json
+
+# packages file containing multi-root paths
+max_muscle_coaching_front/.packages.generated
+
+# Flutter/Dart/Pub related
+max_muscle_coaching_front/**/doc/api/
+max_muscle_coaching_front/.dart_tool/
+max_muscle_coaching_front/.flutter-plugins
+max_muscle_coaching_front/.flutter-plugins-dependencies
+max_muscle_coaching_front/**/generated_plugin_registrant.dart
+max_muscle_coaching_front/.packages
+max_muscle_coaching_front/.pub-cache/
+max_muscle_coaching_front/.pub/
+max_muscle_coaching_front/build/
+max_muscle_coaching_front/flutter_*.png
+max_muscle_coaching_front/linked_*.ds
+max_muscle_coaching_front/unlinked.ds
+max_muscle_coaching_front/unlinked_spec.ds
+max_muscle_coaching_front/*.keystore
+
+# Android related
+max_muscle_coaching_front/**/android/**/gradle-wrapper.jar
+max_muscle_coaching_front/**/android/.gradle
+max_muscle_coaching_front/**/android/captures/
+max_muscle_coaching_front/**/android/gradlew
+max_muscle_coaching_front/**/android/gradlew.bat
+max_muscle_coaching_front/**/android/local.properties
+max_muscle_coaching_front/**/android/**/GeneratedPluginRegistrant.java
+max_muscle_coaching_front/**/android/key.properties
+max_muscle_coaching_front/*.jks
+
+# iOS/XCode related
+max_muscle_coaching_front/**/ios/**/*.mode1v3
+max_muscle_coaching_front/**/ios/**/*.mode2v3
+max_muscle_coaching_front/**/ios/**/*.moved-aside
+max_muscle_coaching_front/**/ios/**/*.pbxuser
+max_muscle_coaching_front/**/ios/**/*.perspectivev3
+max_muscle_coaching_front/**/ios/**/*sync/
+max_muscle_coaching_front/**/ios/**/.sconsign.dblite
+max_muscle_coaching_front/**/ios/**/.tags*
+max_muscle_coaching_front/**/ios/**/.vagrant/
+max_muscle_coaching_front/**/ios/**/DerivedData/
+max_muscle_coaching_front/**/ios/**/Icon?
+max_muscle_coaching_front/**/ios/**/Pods/
+max_muscle_coaching_front/**/ios/**/.symlinks/
+max_muscle_coaching_front/**/ios/**/profile
+max_muscle_coaching_front/**/ios/**/xcuserdata
+max_muscle_coaching_front/**/ios/.generated/
+max_muscle_coaching_front/**/ios/Flutter/.last_build_id
+max_muscle_coaching_front/**/ios/Flutter/App.framework
+max_muscle_coaching_front/**/ios/Flutter/Flutter.framework
+max_muscle_coaching_front/**/ios/Flutter/Flutter.podspec
+max_muscle_coaching_front/**/ios/Flutter/Generated.xcconfig
+max_muscle_coaching_front/**/ios/Flutter/ephemeral
+max_muscle_coaching_front/**/ios/Flutter/app.flx
+max_muscle_coaching_front/**/ios/Flutter/app.zip
+max_muscle_coaching_front/**/ios/Flutter/flutter_assets/
+max_muscle_coaching_front/**/ios/Flutter/flutter_export_environment.sh
+max_muscle_coaching_front/**/ios/ServiceDefinitions.json
+max_muscle_coaching_front/**/ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+max_muscle_coaching_front/**/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# windows & linux genereted plugins
+max_muscle_coaching_front/**generated_plugin*
+
+# Coverage
+max_muscle_coaching_front/coverage/
+
+# Symbols
+max_muscle_coaching_front/app.*.symbols
+
+# Exceptions to above rules.
+max_muscle_coaching_front/!**/ios/**/default.mode1v3
+max_muscle_coaching_front/!**/ios/**/default.mode2v3
+max_muscle_coaching_front/!**/ios/**/default.pbxuser
+max_muscle_coaching_front/!**/ios/**/default.perspectivev3
+max_muscle_coaching_front/!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+max_muscle_coaching_front/!/dev/ci/**/Gemfile.lock
