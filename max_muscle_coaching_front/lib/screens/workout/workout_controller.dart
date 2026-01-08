@@ -148,6 +148,50 @@ class WorkoutController extends GetxController {
     unawaited(_syncExerciseProgress(exerciseIndex));
   }
 
+  void addSet(int exerciseIndex) {
+    _updateExerciseSetCount(exerciseIndex, delta: 1);
+  }
+
+  void removeSet(int exerciseIndex) {
+    _updateExerciseSetCount(exerciseIndex, delta: -1);
+  }
+
+  void _updateExerciseSetCount(int exerciseIndex, {required int delta}) {
+    final w = workout;
+    if (w == null) return;
+    if (exerciseIndex < 0 || exerciseIndex >= w.exercises.length) return;
+
+    final currentExercise = w.exercises[exerciseIndex];
+    final nextSets = (currentExercise.sets + delta).clamp(1, 999).toInt();
+    if (nextSets == currentExercise.sets) return;
+
+    final updatedExercises = [...w.exercises];
+    updatedExercises[exerciseIndex] = currentExercise.copyWith(sets: nextSets);
+    final updatedWorkout = w.copyWith(exercises: updatedExercises);
+
+    final updatedLogs = [...exerciseLogs];
+    if (exerciseIndex >= 0 && exerciseIndex < updatedLogs.length) {
+      final currentLog = updatedLogs[exerciseIndex];
+      final trimmed = currentLog.sets.where((s) => s.setNumber <= nextSets).toList(growable: false);
+      updatedLogs[exerciseIndex] = currentLog.copyWith(sets: trimmed);
+    }
+
+    workout = updatedWorkout;
+    exerciseLogs = updatedLogs;
+    update();
+
+    if (active && startTimeMs != null) {
+      final session = ActiveWorkoutSession(
+        workout: updatedWorkout,
+        startTimeMs: startTimeMs!,
+        exerciseLogs: updatedLogs,
+      );
+      unawaited(AppController.find.saveActiveSession(session));
+    }
+
+    unawaited(_syncExerciseProgress(exerciseIndex));
+  }
+
   Future<bool> finish() async {
     final workoutHistoryId = _workoutHistoryId;
     final w = workout;
@@ -245,7 +289,7 @@ class WorkoutController extends GetxController {
               id: (ex.exerciseId ?? ex.exercise?.id ?? 0).toString(),
               name: ex.exercise?.name ?? 'Exercise',
               targetMuscle: ex.exercise?.targetMuscle ?? '',
-              sets: ex.plannedSets ?? 0,
+              sets: (ex.plannedSets ?? 0) > 0 ? ex.plannedSets! : 1,
               reps: ex.plannedReps ?? '',
               imageUrls: imageUrls,
               instructions: (ex.exercise?.instructions.isNotEmpty ?? false) ? ex.exercise!.instructions : _instructionsFromNotes(ex.notes),

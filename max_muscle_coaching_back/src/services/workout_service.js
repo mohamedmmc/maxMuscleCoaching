@@ -260,7 +260,7 @@ class WorkoutService {
    */
   async getTodayWorkoutForUser(user) {
     const today = new Date();
-    today.setDate(today.getDate());
+    today.setDate(today.getDate() + 5);
 
     const dateAssigned = this._dateOnly(today);
 
@@ -268,7 +268,7 @@ class WorkoutService {
       where: { userId: user.id, dateAssigned },
       include: [{ model: WorkoutTemplate, required: true }],
     });
-    // existing = null;
+    existing = null;
     if (existing) {
       if (existing.completed && !existing.WorkoutTemplate?.isRestDay) {
         return {
@@ -673,7 +673,6 @@ class WorkoutService {
           equipment: exerciseData.equipment,
           primaryMuscles: exerciseData.primaryMuscles,
           secondaryMuscles: exerciseData.secondaryMuscles,
-          instructions: exerciseData.instructions,
           category: exerciseData.category,
         };
 
@@ -690,9 +689,29 @@ class WorkoutService {
             savedExercise = await Exercise.create(exercise);
             console.log(`Exercise "${exerciseData.name}" saved successfully.`);
           } else {
-            // Exercise exists, use the existing one
-            savedExercise = existingExercise;
-            console.log(`Exercise "${exerciseData.name}" already exists.`);
+            // Exercise exists, keep it up-to-date (idempotent seed)
+            savedExercise = await existingExercise.update(exercise);
+            console.log(
+              `Exercise "${exerciseData.name}" updated successfully.`
+            );
+          }
+
+          const instructionTexts = Array.isArray(exerciseData.instructions)
+            ? exerciseData.instructions
+                .map((text) => String(text ?? "").trim())
+                .filter(Boolean)
+            : [];
+
+          await Instruction.destroy({
+            where: { ExerciseId: savedExercise.id },
+          });
+          if (instructionTexts.length) {
+            await Instruction.bulkCreate(
+              instructionTexts.map((text) => ({
+                text,
+                ExerciseId: savedExercise.id,
+              }))
+            );
           }
 
           // Save images for the exercise (Gallery belongsTo Exercise)

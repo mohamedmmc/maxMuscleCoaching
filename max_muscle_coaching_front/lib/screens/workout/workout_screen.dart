@@ -11,6 +11,7 @@ import 'package:max_muscle_coaching_front/theme/app_text_styles.dart';
 import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
 import 'package:max_muscle_coaching_front/widgets/exercise_card.dart';
 import 'package:max_muscle_coaching_front/widgets/exercise_motion_thumbnail.dart';
+import 'package:max_muscle_coaching_front/widgets/exercise_motion_fullscreen_viewer.dart';
 import 'package:max_muscle_coaching_front/widgets/primary_button.dart';
 
 import 'workout_controller.dart';
@@ -18,7 +19,6 @@ import 'workout_controller.dart';
 part 'components/workout_preview_view.dart';
 part 'components/workout_template_info_card.dart';
 part 'components/workout_exercise_details_sheet.dart';
-part 'components/workout_full_screen_gallery.dart';
 
 class WorkoutScreen extends StatelessWidget {
   const WorkoutScreen({required this.onWorkoutFinished, super.key});
@@ -67,29 +67,120 @@ class WorkoutScreen extends StatelessWidget {
         }
 
         return SafeArea(
-          child: Column(
-            children: [
-              _ActiveHeader(title: w.focus, onFinish: handleFinish, isSaving: controller.finishing),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
-                  itemCount: w.exercises.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
-                  itemBuilder: (context, idx) {
-                    final exercise = w.exercises[idx];
-                    final logs = idx < controller.exerciseLogs.length ? controller.exerciseLogs[idx].sets : const <WorkoutSetLog>[];
-                    return ExerciseCard(
-                      exercise: exercise,
-                      logs: logs,
-                      onLogSet: (setIndex, weight, reps) => controller.logSet(idx, setIndex, weight, reps),
-                    );
-                  },
-                ),
-              ),
-            ],
+          child: _ActiveWorkoutView(
+            workout: w,
+            exerciseLogs: controller.exerciseLogs,
+            onLogSet: controller.logSet,
+            onAddSet: controller.addSet,
+            onRemoveSet: controller.removeSet,
+            onFinish: handleFinish,
+            isSaving: controller.finishing,
           ),
         );
       },
+    );
+  }
+}
+
+class _ActiveWorkoutView extends StatefulWidget {
+  const _ActiveWorkoutView({
+    required this.workout,
+    required this.exerciseLogs,
+    required this.onLogSet,
+    required this.onAddSet,
+    required this.onRemoveSet,
+    required this.onFinish,
+    required this.isSaving,
+  });
+
+  final DailyWorkout workout;
+  final List<ExerciseLog> exerciseLogs;
+  final void Function(int exerciseIndex, int setIndex, double weight, double reps) onLogSet;
+  final void Function(int exerciseIndex) onAddSet;
+  final void Function(int exerciseIndex) onRemoveSet;
+  final Future<void> Function() onFinish;
+  final bool isSaving;
+
+  @override
+  State<_ActiveWorkoutView> createState() => _ActiveWorkoutViewState();
+}
+
+class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
+  late final ScrollController _scrollController;
+  late List<GlobalKey> _exerciseKeys;
+  int _expandedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _exerciseKeys = List.generate(widget.workout.exercises.length, (_) => GlobalKey());
+  }
+
+  @override
+  void didUpdateWidget(covariant _ActiveWorkoutView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.workout.exercises.length != widget.workout.exercises.length) {
+      _exerciseKeys = List.generate(widget.workout.exercises.length, (_) => GlobalKey());
+      if (_expandedIndex >= widget.workout.exercises.length) {
+        _expandedIndex = widget.workout.exercises.isEmpty ? -1 : 0;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _advanceTo(int currentIndex) {
+    final nextIndex = currentIndex + 1;
+    if (nextIndex >= widget.workout.exercises.length) {
+      setState(() => _expandedIndex = -1);
+      return;
+    }
+
+    setState(() => _expandedIndex = nextIndex);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = widget.workout;
+
+    return Column(
+      children: [
+        _ActiveHeader(title: w.focus, onFinish: widget.onFinish, isSaving: widget.isSaving),
+        Expanded(
+          child: ListView.separated(
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
+            cacheExtent: 2400,
+            itemCount: w.exercises.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            itemBuilder: (context, idx) {
+              final exercise = w.exercises[idx];
+              final logs = idx < widget.exerciseLogs.length ? widget.exerciseLogs[idx].sets : const <WorkoutSetLog>[];
+
+              return Container(
+                key: _exerciseKeys[idx],
+                child: ExerciseCard(
+                  key: ValueKey(exercise.id),
+                  exercise: exercise,
+                  logs: logs,
+                  expanded: idx == _expandedIndex,
+                  onExpandedChanged: (value) => setState(() => _expandedIndex = value ? idx : -1),
+                  onShowDetails: () => _ExerciseDetailsSheet.show(context, exercise),
+                  onExerciseCompleted: () => _advanceTo(idx),
+                  onAddSet: () => widget.onAddSet(idx),
+                  onRemoveSet: () => widget.onRemoveSet(idx),
+                  onLogSet: (setIndex, weight, reps) => widget.onLogSet(idx, setIndex, weight, reps),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

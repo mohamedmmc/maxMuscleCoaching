@@ -58,7 +58,8 @@ function normalizeFitnessLevel(value) {
 function allowedExerciseLevelsForFitnessLevel(fitnessLevel) {
   const normalized = normalizeFitnessLevel(fitnessLevel);
   if (normalized === "beginner") return new Set(["beginner"]);
-  if (normalized === "intermediate") return new Set(["beginner", "intermediate"]);
+  if (normalized === "intermediate")
+    return new Set(["beginner", "intermediate"]);
   return new Set(["beginner", "intermediate", "expert", "unknown"]);
 }
 
@@ -140,7 +141,9 @@ function buildExerciseCatalog(dbExercises, fileMetaByName) {
 
     const primaryMuscles = meta?.primaryMuscles ?? [];
     const secondaryMuscles = meta?.secondaryMuscles ?? [];
-    const muscles = Array.from(new Set([...primaryMuscles, ...secondaryMuscles]));
+    const muscles = Array.from(
+      new Set([...primaryMuscles, ...secondaryMuscles])
+    );
 
     catalog.push({
       id: dbExercise.id,
@@ -185,14 +188,19 @@ function muscleMatchScore(exercise, targetMuscles) {
 }
 
 function isEligibleExercise(exercise, criteria) {
-  const allowedLevels = allowedExerciseLevelsForFitnessLevel(criteria.fitnessLevel);
+  const allowedLevels = allowedExerciseLevelsForFitnessLevel(
+    criteria.fitnessLevel
+  );
   if (!allowedLevels.has(exercise.level)) return false;
 
   if (!isEquipmentAllowedForLocation(exercise.equipment, criteria.location)) {
     return false;
   }
 
-  if (!criteria.isRestDay && !isAllowedStrengthCategory(exercise.category, criteria.fitnessLevel)) {
+  if (
+    !criteria.isRestDay &&
+    !isAllowedStrengthCategory(exercise.category, criteria.fitnessLevel)
+  ) {
     return false;
   }
 
@@ -216,7 +224,9 @@ function slotMatchesExercise(exercise, slot) {
   }
 
   if (slot.keywordsAny?.length && slot.requireKeywordMatch) {
-    const matches = slot.keywordsAny.some((k) => exercise.key.includes(normalizeKey(k)));
+    const matches = slot.keywordsAny.some((k) =>
+      exercise.key.includes(normalizeKey(k))
+    );
     if (!matches) return false;
   }
 
@@ -282,7 +292,8 @@ function pickBestExercise(exercises, usedIds, criteria, slot) {
     }))
     .sort(
       (a, b) =>
-        b.score - a.score || a.exercise.name.localeCompare(b.exercise.name, "en")
+        b.score - a.score ||
+        a.exercise.name.localeCompare(b.exercise.name, "en")
     );
 
   return candidates[0]?.exercise ?? null;
@@ -291,11 +302,14 @@ function pickBestExercise(exercises, usedIds, criteria, slot) {
 function prescriptionForSlot(fitnessLevel, exercise, slot) {
   const level = normalizeFitnessLevel(fitnessLevel);
   const slotType = slot.type || "accessory";
-  const isCompound = slotType === "compound" || exercise.mechanic === "compound";
+  const isCompound =
+    slotType === "compound" || exercise.mechanic === "compound";
 
   if (slotType === "core") {
-    if (level === "beginner") return { sets: 3, reps: "10-20", restSeconds: 45 };
-    if (level === "intermediate") return { sets: 3, reps: "12-20", restSeconds: 45 };
+    if (level === "beginner")
+      return { sets: 3, reps: "10-20", restSeconds: 45 };
+    if (level === "intermediate")
+      return { sets: 3, reps: "12-20", restSeconds: 45 };
     return { sets: 4, reps: "12-25", restSeconds: 45 };
   }
 
@@ -467,7 +481,13 @@ function slotsForCategory(category) {
           label: "Hinge pattern",
           musclesAny: ["hamstrings", "glutes", "lower back"],
           preferMechanic: "compound",
-          keywordsAny: ["deadlift", "romanian", "rdl", "hip thrust", "good morning"],
+          keywordsAny: [
+            "deadlift",
+            "romanian",
+            "rdl",
+            "hip thrust",
+            "good morning",
+          ],
         },
         {
           type: "compound",
@@ -761,7 +781,9 @@ function slotsForCategory(category) {
 
 async function createTemplateWithExercises(templateData, exercisesData) {
   return sequelize.transaction(async (transaction) => {
-    const template = await WorkoutTemplate.create(templateData, { transaction });
+    const template = await WorkoutTemplate.create(templateData, {
+      transaction,
+    });
 
     const unique = new Map();
     for (const ex of exercisesData) {
@@ -863,7 +885,9 @@ async function seedWorkoutTemplates() {
       attributes: ["id", "name", "level", "mechanic", "equipment", "category"],
     });
     if (!dbExercises.length) {
-      console.log("No exercises found in database. Please seed exercises first.");
+      console.log(
+        "No exercises found in database. Please seed exercises first."
+      );
       return;
     }
 

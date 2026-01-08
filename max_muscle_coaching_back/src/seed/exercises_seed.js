@@ -12,6 +12,7 @@ dotenv.config();
 const { sequelize } = require("../config/db.config");
 const Exercise = require("../models/exercise_model");
 const Gallery = require("../models/gallery_model");
+const Instruction = require("../models/instruction_model");
 const WorkoutService = require("../services/workout_service");
 
 async function run() {
@@ -19,6 +20,7 @@ async function run() {
   // Ensure schema matches current Exercise model (notably: allow NULL for optional fields)
   await Exercise.sync({ alter: true });
   await Gallery.sync({ alter: true });
+  await Instruction.sync({ alter: true });
 
   const workoutService = new WorkoutService();
   await workoutService.saveExercisesToDatabase();

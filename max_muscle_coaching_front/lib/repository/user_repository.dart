@@ -16,10 +16,11 @@ import 'package:max_muscle_coaching_front/storage/shared_preferences_keys.dart';
 class UserRepository extends GetxService {
   static UserRepository get find => Get.find<UserRepository>();
 
-  Future<LoginDTO?> login({required User user}) async {
+  Future<LoginDTO?> login({required User user, bool stayLoggedIn = false}) async {
     try {
       final data = user.toJson();
       data.putIfAbsent('isMobile', () => GetPlatform.isMobile);
+      data.putIfAbsent('stayLoggedIn', () => stayLoggedIn);
       final result = await ApiBaseHelper().request(RequestType.post, '/users/signin', body: data);
       return LoginDTO.fromJson(result);
     } on UnauthorisedException catch (_) {

@@ -1,6 +1,6 @@
 # Define a global platform for your project.
 # Xcode 15+ supports iOS 12.0 and above.
-platform :ios, '12.0'
+platform :ios, '14.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

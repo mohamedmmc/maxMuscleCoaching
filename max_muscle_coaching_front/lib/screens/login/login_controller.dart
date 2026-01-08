@@ -15,12 +15,18 @@ class LoginController extends GetxController {
 
   bool isLoading = false;
   bool obscurePassword = true;
+  bool stayLoggedIn = false;
   bool emailError = false;
   bool passwordError = false;
   String? errorMessage;
 
   void togglePasswordVisibility() {
     obscurePassword = !obscurePassword;
+    update();
+  }
+
+  void setRememberMe(bool? value) {
+    stayLoggedIn = value ?? false;
     update();
   }
 
@@ -53,12 +59,16 @@ class LoginController extends GetxController {
         email: emailController.text.trim(),
         password: passwordController.text,
       );
-      final loginDTO = await _userRepository.login(user: user);
+      final loginDTO = await _userRepository.login(user: user, stayLoggedIn: stayLoggedIn);
       final jwt = loginDTO?.token;
       if (jwt == null) {
         throw Exception('Invalid credentials.');
       }
-      await AppController.find.setJwt(jwt);
+      await AppController.find.setJwt(
+        jwt,
+        refreshToken: loginDTO?.refreshToken,
+        stayLoggedIn: stayLoggedIn,
+      );
     } catch (e) {
       errorMessage = e.toString().replaceAll('Exception: ', '');
     } finally {

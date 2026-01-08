@@ -40,13 +40,7 @@ class WorkoutExerciseInfo {
 
   factory WorkoutExerciseInfo.fromJson(Map<String, dynamic> json) {
     final rawInstructions = json['Instructions'] ?? json['instructions'];
-    final instructions = (rawInstructions is List)
-        ? rawInstructions
-            .map((e) => e?.toString() ?? '')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList(growable: false)
-        : const <String>[];
+    final instructions = _parseInstructions(rawInstructions);
 
     final rawGalleries = json['Galleries'] ?? json['galleries'];
     final galleries = (rawGalleries is List)
@@ -82,6 +76,57 @@ class WorkoutExerciseInfo {
       galleries: galleries,
       instructions: instructions,
     );
+  }
+
+  static List<String> _parseInstructions(dynamic raw) {
+    if (raw is! List) return const <String>[];
+
+    return raw
+        .map((e) => _instructionLine(e))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static String _instructionLine(dynamic entry) {
+    if (entry == null) return '';
+    if (entry is String) return entry;
+
+    if (entry is Map) {
+      final map = <String, dynamic>{};
+      for (final e in entry.entries) {
+        final key = e.key?.toString();
+        if (key == null) continue;
+        map[key.toLowerCase()] = e.value;
+      }
+
+      for (final key in const <String>[
+        'instruction',
+        'instructiontext',
+        'instruction_text',
+        'text',
+        'description',
+        'content',
+        'value',
+        'label',
+        'name',
+      ]) {
+        final value = map[key];
+        if (value == null) continue;
+        return value.toString();
+      }
+
+      for (final entry in map.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (value is! String) continue;
+        if (key == 'id' || key.endsWith('id') || key.contains('created') || key.contains('updated')) continue;
+        final trimmed = value.trim();
+        if (trimmed.isNotEmpty) return trimmed;
+      }
+    }
+
+    return entry.toString();
   }
 
   Map<String, dynamic> toJson() => {

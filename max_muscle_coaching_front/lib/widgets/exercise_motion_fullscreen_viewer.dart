@@ -10,6 +10,7 @@ class ExerciseMotionFullscreenViewer extends StatefulWidget {
     required this.title,
     required this.heroTag,
     required this.imageUrls,
+    required this.initialIndex,
     this.interval = const Duration(milliseconds: 1400),
     this.fadeDuration = const Duration(milliseconds: 520),
     super.key,
@@ -18,6 +19,7 @@ class ExerciseMotionFullscreenViewer extends StatefulWidget {
   final String title;
   final String heroTag;
   final List<String> imageUrls;
+  final int initialIndex;
   final Duration interval;
   final Duration fadeDuration;
 
@@ -26,9 +28,11 @@ class ExerciseMotionFullscreenViewer extends StatefulWidget {
     required String title,
     required String heroTag,
     required List<String> imageUrls,
+    int initialIndex = 0,
   }) async {
-    final urls = imageUrls.map((e) => e.trim()).where((e) => e.isNotEmpty).take(2).toList(growable: false);
+    final urls = imageUrls.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
     if (urls.isEmpty) return;
+    final clampedInitial = initialIndex.clamp(0, urls.length - 1).toInt();
 
     await showGeneralDialog<void>(
       context: context,
@@ -36,7 +40,7 @@ class ExerciseMotionFullscreenViewer extends StatefulWidget {
       barrierLabel: 'Close',
       barrierColor: AppColors.black.withValues(alpha: 0.92),
       transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (_, __, ___) => ExerciseMotionFullscreenViewer(title: title, heroTag: heroTag, imageUrls: urls),
+      pageBuilder: (_, __, ___) => ExerciseMotionFullscreenViewer(title: title, heroTag: heroTag, imageUrls: urls, initialIndex: clampedInitial),
       transitionBuilder: (_, animation, __, child) {
         final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut, reverseCurve: Curves.easeIn);
         return FadeTransition(
@@ -57,43 +61,59 @@ class ExerciseMotionFullscreenViewer extends StatefulWidget {
 class _ExerciseMotionFullscreenViewerState extends State<ExerciseMotionFullscreenViewer> {
   Timer? _timer;
   bool _showSecond = false;
+  PageController? _pageController;
+  int _index = 0;
 
-  List<String> get _urls => widget.imageUrls.map((e) => e.trim()).where((e) => e.isNotEmpty).take(2).toList(growable: false);
+  List<String> get _urls => widget.imageUrls.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
 
   @override
   void initState() {
     super.initState();
-    _start();
+    _configure();
   }
 
   @override
   void didUpdateWidget(covariant ExerciseMotionFullscreenViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.imageUrls != widget.imageUrls) {
-      _showSecond = false;
-      _start();
+    if (oldWidget.imageUrls != widget.imageUrls || oldWidget.initialIndex != widget.initialIndex) {
+      _configure();
     }
   }
 
-  void _start() {
+  void _configure() {
     _timer?.cancel();
+    _timer = null;
+    _pageController?.dispose();
+    _pageController = null;
+
     final urls = _urls;
-    if (urls.length < 2) return;
-    _timer = Timer.periodic(widget.interval, (_) {
-      if (!mounted) return;
-      setState(() => _showSecond = !_showSecond);
-    });
+    if (urls.isEmpty) return;
+
+    _index = widget.initialIndex.clamp(0, urls.length - 1).toInt();
+    if (urls.length == 2) {
+      _showSecond = _index == 1;
+      _timer = Timer.periodic(widget.interval, (_) {
+        if (!mounted) return;
+        setState(() => _showSecond = !_showSecond);
+      });
+      return;
+    }
+
+    _showSecond = false;
+    _pageController = PageController(initialPage: _index);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _pageController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final urls = _urls;
+    final isMotion = urls.length == 2;
     final hasSecond = urls.length >= 2;
     final primary = urls.isNotEmpty ? urls.first : '';
     final secondary = hasSecond ? urls[1] : '';
@@ -106,35 +126,55 @@ class _ExerciseMotionFullscreenViewerState extends State<ExerciseMotionFullscree
           Positioned.fill(
             child: Hero(
               tag: widget.heroTag,
-              child: InteractiveViewer(
-                minScale: 1,
-                maxScale: 4,
-                child: Center(
-                  child: Stack(
-                    fit: StackFit.passthrough,
-                    alignment: Alignment.center,
-                    children: [
-                      if (primary.isNotEmpty)
-                        Image.network(
-                          primary,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              child: isMotion
+                  ? InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 4,
+                      child: Center(
+                        child: Stack(
+                          fit: StackFit.passthrough,
+                          alignment: Alignment.center,
+                          children: [
+                            if (primary.isNotEmpty)
+                              Image.network(
+                                primary,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                              ),
+                            if (hasSecond && secondary.isNotEmpty)
+                              AnimatedOpacity(
+                                opacity: _showSecond ? 1 : 0,
+                                duration: widget.fadeDuration,
+                                curve: Curves.easeInOut,
+                                child: Image.network(
+                                  secondary,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                ),
+                              ),
+                          ],
                         ),
-                      if (hasSecond && secondary.isNotEmpty)
-                        AnimatedOpacity(
-                          opacity: _showSecond ? 1 : 0,
-                          duration: widget.fadeDuration,
-                          curve: Curves.easeInOut,
-                          child: Image.network(
-                            secondary,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    )
+                  : PageView.builder(
+                      controller: _pageController,
+                      itemCount: urls.length,
+                      onPageChanged: (idx) => setState(() => _index = idx),
+                      itemBuilder: (context, idx) {
+                        final url = urls[idx];
+                        return InteractiveViewer(
+                          minScale: 1,
+                          maxScale: 4,
+                          child: Center(
+                            child: Image.network(
+                              url,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+                        );
+                      },
+                    ),
             ),
           ),
           Positioned(
@@ -177,7 +217,7 @@ class _ExerciseMotionFullscreenViewerState extends State<ExerciseMotionFullscree
                       border: Border.all(color: AppColors.white.withValues(alpha: 0.12)),
                     ),
                     child: Text(
-                      'MOTION',
+                      isMotion ? 'MOTION' : '${_index + 1}/${urls.length}',
                       style: AppTextStyles.caps(color: AppColors.grey100),
                     ),
                   ),
@@ -204,7 +244,11 @@ class _ExerciseMotionFullscreenViewerState extends State<ExerciseMotionFullscree
                         const Icon(Icons.pinch_rounded, color: AppColors.volt, size: 18),
                         const SizedBox(width: 10),
                         Text(
-                          hasSecond ? 'Pinch to zoom • Motion preview' : 'Pinch to zoom',
+                          isMotion
+                              ? 'Pinch to zoom • Motion preview'
+                              : urls.length > 1
+                                  ? 'Pinch to zoom • Swipe'
+                                  : 'Pinch to zoom',
                           style: AppTextStyles.body(color: AppColors.grey300, weight: FontWeight.w700, height: 1.2),
                         ),
                       ],

@@ -9,79 +9,97 @@ class _PreviewView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final template = workout.template;
+    final systemBottomInset = MediaQuery.of(context).padding.bottom;
+    const dockContentHeight = 76.0;
+    const dockMinBottomPadding = 12.0;
+    final dockExtraPadding = (dockMinBottomPadding - systemBottomInset).clamp(0.0, double.infinity);
+    final dockHeightInSafeArea = dockContentHeight + dockExtraPadding;
+    const buttonHeight = 56.0;
+    const buttonGap = 12.0;
+    final buttonBottom = dockHeightInSafeArea + buttonGap;
+    final scrollBottomPadding = buttonBottom + buttonHeight + 24;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.volt, borderRadius: BorderRadius.circular(999)),
-                  child: Text(
-                    'TODAY',
-                    style: AppTextStyles.caps(color: AppColors.black),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  workout.dayOfWeek.toUpperCase(),
-                  style: AppTextStyles.caps(color: AppColors.grey600, letterSpacing: 2.4),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              workout.focus.toUpperCase(),
-              style: AppTextStyles.display(size: 34, letterSpacing: -1.2),
-            ),
-            const SizedBox(height: 12),
-            Row(
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 18, 20, scrollBottomPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.local_fire_department_rounded, color: AppColors.volt, size: 18),
-                    const SizedBox(width: 6),
-                    Text('High Intensity', style: AppTextStyles.label(weight: FontWeight.w700, color: AppColors.grey)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: AppColors.volt, borderRadius: BorderRadius.circular(999)),
+                      child: Text(
+                        'TODAY',
+                        style: AppTextStyles.caps(color: AppColors.black),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      workout.dayOfWeek.toUpperCase(),
+                      style: AppTextStyles.caps(color: AppColors.grey600, letterSpacing: 2.4),
+                    ),
                   ],
                 ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppColors.grey800),
-                  ),
-                  child: Text(
-                    workout.category,
-                    style: AppTextStyles.label(size: 12, weight: FontWeight.w800),
-                  ),
+                const SizedBox(height: 12),
+                Text(
+                  workout.focus.toUpperCase(),
+                  style: AppTextStyles.display(size: 34, letterSpacing: -1.2),
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.local_fire_department_rounded, color: AppColors.volt, size: 18),
+                        const SizedBox(width: 6),
+                        Text('High Intensity', style: AppTextStyles.label(weight: FontWeight.w700, color: AppColors.grey)),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.grey800),
+                      ),
+                      child: Text(
+                        workout.category,
+                        style: AppTextStyles.label(size: 12, weight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                if (template != null) ...[
+                  _TemplateInfoCard(
+                    template: template,
+                    dateAssigned: workout.dateAssigned,
+                    workoutHistoryId: workout.workoutHistoryId,
+                  ),
+                  const SizedBox(height: 18),
+                ],
+                for (final ex in workout.exercises) ...[
+                  _PreviewExerciseRow(exercise: ex),
+                  const SizedBox(height: 10),
+                ],
               ],
             ),
-            const SizedBox(height: 18),
-            if (template != null) ...[
-              _TemplateInfoCard(
-                template: template,
-                dateAssigned: workout.dateAssigned,
-                workoutHistoryId: workout.workoutHistoryId,
-              ),
-              const SizedBox(height: 18),
-            ],
-            for (final ex in workout.exercises) ...[
-              _PreviewExerciseRow(exercise: ex),
-              const SizedBox(height: 10),
-            ],
-            PrimaryButton(
-              label: 'Initialize',
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: buttonBottom,
+            child: PrimaryButton(
+              label: 'Start workout',
               trailing: const Icon(Icons.play_arrow_rounded, color: AppColors.black, size: 26),
               onPressed: onStart,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

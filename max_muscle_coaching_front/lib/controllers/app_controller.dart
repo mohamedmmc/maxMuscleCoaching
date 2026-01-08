@@ -17,6 +17,22 @@ class AppController extends GetxController {
   List<WorkoutSessionLog> logs = const [];
   ActiveWorkoutSession? activeSession;
 
+  Future<String?> _renewJwtIfPossible() async {
+    final refreshToken = SharedPreferencesService.find.get(refreshTokenKey);
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+
+    final loginDTO = await UserRepository.find.renewJWT(token: {refreshTokenKey: refreshToken});
+    final jwt = loginDTO?.token;
+    if (jwt == null || jwt.isEmpty) return null;
+
+    SharedPreferencesService.find.add(jwtKey, jwt);
+    final newRefreshToken = loginDTO?.refreshToken;
+    if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+      SharedPreferencesService.find.add(refreshTokenKey, newRefreshToken);
+    }
+    return jwt;
+  }
+
   Future<void> init() async {
     hasInternet = await ConnectivityService.hasInternet();
     if (!hasInternet) {
@@ -32,10 +48,17 @@ class AppController extends GetxController {
 
     final jwt = SharedPreferencesService.find.get(jwtKey);
     if (jwt != null) {
+      String? activeJwt = jwt;
       if (JwtDecoder.isExpired(jwt)) {
-        SharedPreferencesService.find.removeKey(jwtKey);
-      } else {
-        user = User.fromToken(JwtDecoder.decode(jwt));
+        activeJwt = await _renewJwtIfPossible();
+        if (activeJwt == null) {
+          SharedPreferencesService.find.removeKey(jwtKey);
+          SharedPreferencesService.find.removeKey(refreshTokenKey);
+        }
+      }
+
+      if (activeJwt != null && !JwtDecoder.isExpired(activeJwt)) {
+        user = User.fromToken(JwtDecoder.decode(activeJwt));
         final remoteUser = await UserRepository.find.getLoggedInUser();
         if (remoteUser != null) user = remoteUser;
       }
@@ -61,17 +84,32 @@ class AppController extends GetxController {
     update();
 
     final jwt = SharedPreferencesService.find.get(jwtKey);
-    if (jwt != null && !JwtDecoder.isExpired(jwt)) {
-      final remoteUser = await UserRepository.find.getLoggedInUser();
-      if (remoteUser != null) {
-        user = remoteUser;
-        update();
+    if (jwt != null) {
+      String? activeJwt = jwt;
+      if (JwtDecoder.isExpired(jwt)) {
+        activeJwt = await _renewJwtIfPossible();
+        if (activeJwt == null) {
+          await logout();
+          return;
+        }
+      }
+      if (activeJwt != null && !JwtDecoder.isExpired(activeJwt)) {
+        final remoteUser = await UserRepository.find.getLoggedInUser();
+        if (remoteUser != null) {
+          user = remoteUser;
+          update();
+        }
       }
     }
   }
 
-  Future<void> setJwt(String jwt) async {
+  Future<void> setJwt(String jwt, {String? refreshToken, bool stayLoggedIn = false}) async {
     SharedPreferencesService.find.add(jwtKey, jwt);
+    if (stayLoggedIn && refreshToken != null && refreshToken.isNotEmpty) {
+      SharedPreferencesService.find.add(refreshTokenKey, refreshToken);
+    } else {
+      SharedPreferencesService.find.removeKey(refreshTokenKey);
+    }
     user = User.fromToken(JwtDecoder.decode(jwt));
     update();
 
@@ -100,6 +138,7 @@ class AppController extends GetxController {
 
   Future<void> logout() async {
     SharedPreferencesService.find.removeKey(jwtKey);
+    SharedPreferencesService.find.removeKey(refreshTokenKey);
 
     logs = const [];
     activeSession = null;

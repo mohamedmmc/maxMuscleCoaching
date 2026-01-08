@@ -89,6 +89,28 @@ class DailyWorkout {
   final int? workoutHistoryId;
   final WorkoutTemplateInfo? template;
 
+  DailyWorkout copyWith({
+    String? dayOfWeek,
+    String? focus,
+    String? category,
+    bool? isRestDay,
+    List<Exercise>? exercises,
+    String? dateAssigned,
+    int? workoutHistoryId,
+    WorkoutTemplateInfo? template,
+  }) {
+    return DailyWorkout(
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      focus: focus ?? this.focus,
+      category: category ?? this.category,
+      isRestDay: isRestDay ?? this.isRestDay,
+      exercises: exercises ?? this.exercises,
+      dateAssigned: dateAssigned ?? this.dateAssigned,
+      workoutHistoryId: workoutHistoryId ?? this.workoutHistoryId,
+      template: template ?? this.template,
+    );
+  }
+
   Map<String, Object?> toJson() {
     return {
       'dayOfWeek': dayOfWeek,
@@ -160,6 +182,46 @@ class Exercise {
   final String? updatedAt;
 
   String get imageUrl => imageUrls.isNotEmpty ? imageUrls.first : '';
+
+  Exercise copyWith({
+    String? id,
+    String? name,
+    String? targetMuscle,
+    int? sets,
+    String? reps,
+    List<String>? imageUrls,
+    List<String>? instructions,
+    String? force,
+    String? level,
+    String? mechanic,
+    String? equipment,
+    String? exerciseCategory,
+    int? restSeconds,
+    String? notes,
+    int? orderIndex,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return Exercise(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      targetMuscle: targetMuscle ?? this.targetMuscle,
+      sets: sets ?? this.sets,
+      reps: reps ?? this.reps,
+      imageUrls: imageUrls ?? this.imageUrls,
+      instructions: instructions ?? this.instructions,
+      force: force ?? this.force,
+      level: level ?? this.level,
+      mechanic: mechanic ?? this.mechanic,
+      equipment: equipment ?? this.equipment,
+      exerciseCategory: exerciseCategory ?? this.exerciseCategory,
+      restSeconds: restSeconds ?? this.restSeconds,
+      notes: notes ?? this.notes,
+      orderIndex: orderIndex ?? this.orderIndex,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Map<String, Object?> toJson() {
     return {

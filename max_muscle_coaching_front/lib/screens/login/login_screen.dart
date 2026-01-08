@@ -68,10 +68,24 @@ class LoginScreen extends StatelessWidget {
                               controller: controller.passwordController,
                               obscureText: controller.obscurePassword,
                               error: controller.passwordError,
-                              onToggleVisibility:
-                                  controller.togglePasswordVisibility,
+                              onToggleVisibility: controller.togglePasswordVisibility,
                             ),
                             const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: controller.stayLoggedIn,
+                                  onChanged: controller.isLoading ? null : controller.setRememberMe,
+                                  activeColor: AppColors.volt,
+                                  checkColor: AppColors.dark,
+                                  side: BorderSide(color: AppColors.grey600, width: 2),
+                                ),
+                                Text(
+                                  'Remember me',
+                                  style: AppTextStyles.body(size: 12, weight: FontWeight.w700, color: AppColors.grey600),
+                                ),
+                              ],
+                            ),
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
@@ -81,8 +95,7 @@ class LoginScreen extends StatelessWidget {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                const ForgotPasswordScreen(),
+                                            builder: (context) => const ForgotPasswordScreen(),
                                           ),
                                         );
                                       },
@@ -117,8 +130,7 @@ class LoginScreen extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          const OnboardingScreen(),
+                                      builder: (context) => const OnboardingScreen(),
                                     ),
                                   );
                                 },

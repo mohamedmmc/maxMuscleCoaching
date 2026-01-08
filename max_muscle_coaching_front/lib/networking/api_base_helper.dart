@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'dart:convert';
-import 'package:get/get_connect/http/src/request/request.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:cross_file/cross_file.dart';
@@ -33,7 +31,7 @@ extension RequestTypeExtension on RequestType {
   }
 }
 
-const String ip = '169.254.240.105';
+const String ip = '172.20.10.6';
 // const String ip = '192.168.100.8';
 
 const String baseUrlLocalWeb = 'http://localhost:3001'; // web localhost
@@ -46,6 +44,7 @@ String _lastRequestedUrl = '';
 
 class ApiBaseHelper extends GetxController {
   static ApiBaseHelper get find => Get.find<ApiBaseHelper>();
+  static Future<bool>? _tokenRefreshInFlight;
   // final String baseUrl = baseUrlLocalWeb;
   final String baseUrl = kReleaseMode
       ? baseUrlRemote
@@ -76,19 +75,107 @@ class ApiBaseHelper extends GetxController {
 
   String? getToken() => SharedPreferencesService.find.get(jwtKey);
 
+  bool _isAuthFailure(http.Response response) {
+    if (response.statusCode == 401) return true;
+    if (response.statusCode != 403) return false;
+
+    final body = response.body;
+    if (body.contains('session_expired') || body.contains('jwt_expired')) return true;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['message'] != null) {
+        final message = decoded['message']?.toString() ?? '';
+        return message.contains('session_expired') || message.contains('jwt_expired');
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _refreshAccessToken() async {
+    if (_tokenRefreshInFlight != null) return _tokenRefreshInFlight!;
+
+    _tokenRefreshInFlight = () async {
+      await Helper.waitAndExecute(() => SharedPreferencesService.find.isReady, () {});
+
+      final savedRefreshToken = SharedPreferencesService.find.get(refreshTokenKey);
+      if (savedRefreshToken == null || savedRefreshToken.isEmpty) return false;
+
+      final requestUrl = Uri.parse('$baseUrl/users/renew');
+      final refreshHeaders = Map<String, String>.from(_defaultHeader);
+      refreshHeaders.remove('Authorization');
+      refreshHeaders['locale'] = Get.locale?.languageCode ?? 'en';
+
+      final response = await http.post(
+        requestUrl,
+        body: jsonEncode({refreshTokenKey: savedRefreshToken}),
+        headers: refreshHeaders,
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          SharedPreferencesService.find.removeKey(jwtKey);
+          SharedPreferencesService.find.removeKey(refreshTokenKey);
+        }
+        return false;
+      }
+
+      if (response.body.isEmpty) return false;
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return false;
+
+      final newToken = decoded['token']?.toString();
+      if (newToken == null || newToken.isEmpty) return false;
+
+      SharedPreferencesService.find.add(jwtKey, newToken);
+      final newRefreshToken = decoded['refreshToken']?.toString();
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        SharedPreferencesService.find.add(refreshTokenKey, newRefreshToken);
+      }
+
+      return true;
+    }()
+        .whenComplete(() {
+      _tokenRefreshInFlight = null;
+    });
+
+    return _tokenRefreshInFlight!;
+  }
+
   Future<dynamic> request(RequestType requestType, String url, {Map<String, String>? headers, dynamic body, List<XFile?>? files, String? imageName, bool sendToken = false}) async {
+    return _requestInternal(
+      requestType,
+      url,
+      headers: headers,
+      body: body,
+      files: files,
+      imageName: imageName,
+      sendToken: sendToken,
+      attempt: 0,
+    );
+  }
+
+  Future<dynamic> _requestInternal(
+    RequestType requestType,
+    String url, {
+    Map<String, String>? headers,
+    dynamic body,
+    List<XFile?>? files,
+    String? imageName,
+    bool sendToken = false,
+    required int attempt,
+  }) async {
     final hasInternet = await ConnectivityService.hasInternet();
     if (!hasInternet) {
       SnackbarService.showNoInternet();
       throw NoInternetException('No internet connection');
     }
 
-    if (url == _lastRequestedUrl) {
+    if (attempt == 0 && url == _lastRequestedUrl) {
       LoggerService.logger!.w('API Warning: Duplicate request to the same URL: $url');
     }
-    _lastRequestedUrl = url;
+    if (attempt == 0) _lastRequestedUrl = url;
     late http.Response response;
-    isLoading = true;
+    if (attempt == 0) isLoading = true;
     await Helper.waitAndExecute(() => SharedPreferencesService.find.isReady, () {});
     _defaultHeader['locale'] = Get.locale?.languageCode ?? 'en';
     String? token;
@@ -104,73 +191,93 @@ class ApiBaseHelper extends GetxController {
 
     final requestUrl = Uri.parse('$baseUrl$url');
 
-    if (files != null && files.isNotEmpty) {
-      final keyImage = imageName ?? (files.length > 2 ? 'gallery' : 'photo');
-      LoggerService.logger!.i('API uploadFile, url $url');
-      final imageUploadRequest = http.MultipartRequest(requestType.name.toUpperCase(), requestUrl);
-      if (sendToken) imageUploadRequest.headers['Authorization'] = 'Bearer $token';
+    try {
+      if (files != null && files.isNotEmpty) {
+        final keyImage = imageName ?? (files.length > 2 ? 'gallery' : 'photo');
+        LoggerService.logger!.i('API uploadFile, url $url');
+        final imageUploadRequest = http.MultipartRequest(requestType.name.toUpperCase(), requestUrl);
+        if (sendToken) imageUploadRequest.headers['Authorization'] = 'Bearer $token';
 
-      for (final file in files) {
-        Uint8List fileBytes = await file!.readAsBytes();
-        String filename = file.name;
+        for (final file in files) {
+          Uint8List fileBytes = await file!.readAsBytes();
+          String filename = file.name;
 
-        imageUploadRequest.files.add(http.MultipartFile.fromBytes(keyImage, fileBytes.toList(), filename: filename));
-      }
-      if (body is Map<String, dynamic>) {
-        for (final element in (body).keys) {
-          if (body[element] != null) imageUploadRequest.fields.putIfAbsent(element, () => body[element].toString());
+          imageUploadRequest.files.add(http.MultipartFile.fromBytes(keyImage, fileBytes.toList(), filename: filename));
         }
+        if (body is Map<String, dynamic>) {
+          for (final element in (body).keys) {
+            if (body[element] != null) imageUploadRequest.fields.putIfAbsent(element, () => body[element].toString());
+          }
+        } else {
+          LoggerService.logger!.w('uploadFile body is not a Map<String, dynamic>');
+        }
+        final streamedResponse = await imageUploadRequest.send();
+        final responseData = await streamedResponse.stream.bytesToString();
+        response = http.Response(
+          responseData,
+          streamedResponse.statusCode,
+          headers: streamedResponse.headers,
+          isRedirect: streamedResponse.isRedirect,
+          persistentConnection: streamedResponse.persistentConnection,
+          reasonPhrase: streamedResponse.reasonPhrase,
+          request: streamedResponse.request,
+        );
       } else {
-        LoggerService.logger!.w('uploadFile body is not a Map<String, dynamic>');
+        switch (requestType) {
+          case RequestType.get:
+            LoggerService.logger!.i('API Get, url $url');
+            response = await http.get(
+              requestUrl,
+              headers: headers ?? _defaultHeader,
+            );
+            break;
+          case RequestType.post:
+            LoggerService.logger!.i('API Post, url $url');
+            response = await http.post(
+              requestUrl,
+              body: jsonEncode(body),
+              headers: headers ?? _defaultHeader,
+            );
+            break;
+          case RequestType.put:
+            LoggerService.logger!.i('API Put, url $url');
+            response = await http.put(
+              requestUrl,
+              body: jsonEncode(body),
+              headers: headers ?? _defaultHeader,
+            );
+            break;
+          case RequestType.delete:
+            LoggerService.logger!.i('API Delete, url $url');
+            response = await http.delete(
+              requestUrl,
+              body: body != null ? jsonEncode(body) : null,
+              headers: headers ?? _defaultHeader,
+            );
+            break;
+        }
       }
-      final streamedResponse = await imageUploadRequest.send();
-      final responseData = await streamedResponse.stream.asBroadcastStream().bytesToString();
-      response = http.Response(
-        responseData,
-        streamedResponse.statusCode,
-        headers: streamedResponse.headers,
-        isRedirect: streamedResponse.isRedirect,
-        persistentConnection: streamedResponse.persistentConnection,
-        reasonPhrase: streamedResponse.reasonPhrase,
-        request: streamedResponse.request,
-      );
-    } else {
-      switch (requestType) {
-        case RequestType.get:
-          LoggerService.logger!.i('API Get, url $url');
-          response = await http.get(
-            requestUrl,
-            headers: headers ?? _defaultHeader,
+
+      if (sendToken && attempt == 0 && _isAuthFailure(response)) {
+        final refreshed = await _refreshAccessToken();
+        if (refreshed) {
+          return _requestInternal(
+            requestType,
+            url,
+            headers: headers,
+            body: body,
+            files: files,
+            imageName: imageName,
+            sendToken: sendToken,
+            attempt: 1,
           );
-          break;
-        case RequestType.post:
-          LoggerService.logger!.i('API Post, url $url');
-          response = await http.post(
-            requestUrl,
-            body: jsonEncode(body),
-            headers: headers ?? _defaultHeader,
-          );
-          break;
-        case RequestType.put:
-          LoggerService.logger!.i('API Put, url $url');
-          response = await http.put(
-            requestUrl,
-            body: jsonEncode(body),
-            headers: headers ?? _defaultHeader,
-          );
-          break;
-        case RequestType.delete:
-          LoggerService.logger!.i('API Delete, url $url');
-          response = await http.delete(
-            requestUrl,
-            body: body != null ? jsonEncode(body) : null,
-            headers: headers ?? _defaultHeader,
-          );
-          break;
+        }
       }
+
+      return _returnResponse(response);
+    } finally {
+      if (attempt == 0) isLoading = false;
     }
-    isLoading = false;
-    return _returnResponse(response);
   }
 
   String getClientImage(String pictureName) => '$baseUrl/public/images/client/$pictureName';

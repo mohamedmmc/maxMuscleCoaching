@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../models/models.dart';
 import '../theme/app_colors.dart';
@@ -13,22 +14,35 @@ class ExerciseCard extends StatefulWidget {
     required this.exercise,
     required this.logs,
     required this.onLogSet,
+    required this.expanded,
+    required this.onExpandedChanged,
+    this.onShowDetails,
+    this.onExerciseCompleted,
+    this.onAddSet,
+    this.onRemoveSet,
     super.key,
   });
 
   final Exercise exercise;
   final List<WorkoutSetLog> logs;
   final void Function(int setIndex, double weight, double reps) onLogSet;
+  final bool expanded;
+  final ValueChanged<bool> onExpandedChanged;
+  final VoidCallback? onShowDetails;
+  final VoidCallback? onExerciseCompleted;
+  final VoidCallback? onAddSet;
+  final VoidCallback? onRemoveSet;
 
   @override
   State<ExerciseCard> createState() => _ExerciseCardState();
 }
 
 class _ExerciseCardState extends State<ExerciseCard> {
-  bool expanded = true;
   late final List<TextEditingController> _weightControllers;
   late final List<TextEditingController> _repsControllers;
   bool _bulkUpdating = false;
+  final GlobalKey _firstSetKey = GlobalKey();
+  Timer? _scrollToFirstSetTimer;
 
   @override
   void initState() {
@@ -40,18 +54,29 @@ class _ExerciseCardState extends State<ExerciseCard> {
     _seedDefaultValues();
     _applyLogsToControllers(widget.logs);
     _bindBulkSync();
+
+    if (widget.expanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToFirstSet());
+    }
   }
 
   @override
   void didUpdateWidget(covariant ExerciseCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.exercise.sets != widget.exercise.sets) {
+      _syncControllersWithSets();
+    }
     if (oldWidget.logs != widget.logs) {
       _applyLogsToControllers(widget.logs);
+    }
+    if (!oldWidget.expanded && widget.expanded) {
+      _scrollToFirstSet();
     }
   }
 
   @override
   void dispose() {
+    _scrollToFirstSetTimer?.cancel();
     for (final c in _weightControllers) {
       c.dispose();
     }
@@ -107,19 +132,22 @@ class _ExerciseCardState extends State<ExerciseCard> {
   }
 
   void _bindBulkSync() {
-    for (var i = 0; i < widget.exercise.sets; i++) {
-      final idx = i;
-      _weightControllers[i].addListener(() {
-        if (_bulkUpdating) return;
-        if (_isCompleted(idx)) return;
-        _syncAcrossSets(sourceIndex: idx, source: _weightControllers, target: _weightControllers);
-      });
-      _repsControllers[i].addListener(() {
-        if (_bulkUpdating) return;
-        if (_isCompleted(idx)) return;
-        _syncAcrossSets(sourceIndex: idx, source: _repsControllers, target: _repsControllers);
-      });
+    for (var i = 0; i < _weightControllers.length; i++) {
+      _bindBulkSyncForIndex(i);
     }
+  }
+
+  void _bindBulkSyncForIndex(int idx) {
+    _weightControllers[idx].addListener(() {
+      if (_bulkUpdating) return;
+      if (_isCompleted(idx)) return;
+      _syncAcrossSets(sourceIndex: idx, source: _weightControllers, target: _weightControllers);
+    });
+    _repsControllers[idx].addListener(() {
+      if (_bulkUpdating) return;
+      if (_isCompleted(idx)) return;
+      _syncAcrossSets(sourceIndex: idx, source: _repsControllers, target: _repsControllers);
+    });
   }
 
   void _syncAcrossSets({
@@ -138,6 +166,30 @@ class _ExerciseCardState extends State<ExerciseCard> {
     _bulkUpdating = false;
   }
 
+  void _syncControllersWithSets() {
+    final desiredSets = widget.exercise.sets;
+    final currentSets = _weightControllers.length;
+    if (desiredSets == currentSets) return;
+
+    if (desiredSets > currentSets) {
+      final defaultReps = _suggestedLowerReps(widget.exercise.reps);
+      for (var i = currentSets; i < desiredSets; i++) {
+        _weightControllers.add(TextEditingController());
+        _repsControllers.add(TextEditingController(text: defaultReps));
+        _bindBulkSyncForIndex(i);
+      }
+    } else {
+      for (var i = currentSets - 1; i >= desiredSets; i--) {
+        final w = _weightControllers.removeLast();
+        final r = _repsControllers.removeLast();
+        w.dispose();
+        r.dispose();
+      }
+    }
+
+    _applyLogsToControllers(widget.logs);
+  }
+
   void _handleComplete(int setIndex) {
     if (_isCompleted(setIndex)) return;
 
@@ -146,7 +198,53 @@ class _ExerciseCardState extends State<ExerciseCard> {
     final weight = double.tryParse(weightText);
     final reps = double.tryParse(repsText);
     if (weight == null || reps == null) return;
+
+    final willCompleteExercise = widget.exercise.sets > 0 && (_completedSets() + 1) >= widget.exercise.sets;
     widget.onLogSet(setIndex, weight, reps);
+    if (willCompleteExercise) {
+      widget.onExerciseCompleted?.call();
+    }
+  }
+
+  void _handleAddSet() {
+    widget.onAddSet?.call();
+  }
+
+  void _handleRemoveSet() {
+    final nextSets = widget.exercise.sets - 1;
+    if (nextSets < 1) return;
+    final completedAfterTrim = widget.logs.where((l) => l.completed && l.setNumber <= nextSets).length >= nextSets;
+    widget.onRemoveSet?.call();
+    if (completedAfterTrim) widget.onExerciseCompleted?.call();
+  }
+
+  void _scrollToFirstSet() {
+    _scrollToFirstSetTimer?.cancel();
+    _scrollToFirstSetTimer = Timer(const Duration(milliseconds: 220), () {
+      if (!mounted || !widget.expanded) return;
+      final ctx = _firstSetKey.currentContext;
+      if (ctx == null) return;
+      _animateRevealClamped(ctx, alignment: 0.42);
+    });
+  }
+
+  void _animateRevealClamped(BuildContext targetContext, {required double alignment}) {
+    final renderObject = targetContext.findRenderObject();
+    if (renderObject == null) return;
+    final viewport = RenderAbstractViewport.of(renderObject);
+
+    final position = Scrollable.of(targetContext).position;
+    final targetOffset = viewport.getOffsetToReveal(renderObject, alignment).offset;
+    final clamped = targetOffset.clamp(position.minScrollExtent, position.maxScrollExtent).toDouble();
+    if ((position.pixels - clamped).abs() < 0.5) return;
+
+    unawaited(
+      position.animateTo(
+        clamped,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      ),
+    );
   }
 
   @override
@@ -162,26 +260,51 @@ class _ExerciseCardState extends State<ExerciseCard> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: expanded ? AppColors.grey900 : AppColors.transparent,
+          color: widget.expanded ? AppColors.grey900 : AppColors.transparent,
         ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           InkWell(
-            onTap: () => setState(() => expanded = !expanded),
+            onTap: () => widget.onExpandedChanged(!widget.expanded),
             child: Stack(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      ExerciseMotionThumbnail(
-                        imageUrls: widget.exercise.imageUrls,
-                        width: 96,
-                        height: 96,
-                        borderRadius: BorderRadius.circular(14),
-                        opacity: 0.9,
+                      Stack(
+                        children: [
+                          ExerciseMotionThumbnail(
+                            imageUrls: widget.exercise.imageUrls,
+                            width: 96,
+                            height: 96,
+                            borderRadius: BorderRadius.circular(14),
+                            opacity: 0.9,
+                          ),
+                          if (widget.onShowDetails != null)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Material(
+                                color: AppColors.black.withValues(alpha: 0.45),
+                                shape: const CircleBorder(),
+                                child: InkWell(
+                                  onTap: widget.onShowDetails,
+                                  customBorder: const CircleBorder(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 18,
+                                      color: AppColors.volt.withValues(alpha: 0.95),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -214,14 +337,14 @@ class _ExerciseCardState extends State<ExerciseCard> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(6),
-                          child: Icon(
-                            expanded
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            color: AppColors.grey500,
-                          ),
+                        child: Icon(
+                          widget.expanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.grey500,
                         ),
                       ),
+                    ),
                     ],
                   ),
                 ),
@@ -244,27 +367,64 @@ class _ExerciseCardState extends State<ExerciseCard> {
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 200),
             crossFadeState:
-                expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                widget.expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
             firstChild: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 children: [
                   const SizedBox(height: 8),
-                  _ExerciseMotionBanner(exercise: widget.exercise),
-                  const SizedBox(height: 14),
-                  _ProtocolBox(exercise: widget.exercise),
+                  _ExerciseMotionBanner(exercise: widget.exercise, onInfo: widget.onShowDetails),
                   const SizedBox(height: 16),
+                  if (widget.onAddSet != null || widget.onRemoveSet != null) ...[
+                    Row(
+                      children: [
+                        Text(
+                          'SETS',
+                          style: AppTextStyles.caps(weight: FontWeight.w800, letterSpacing: 1.8, color: AppColors.grey700),
+                        ),
+                        const Spacer(),
+                        _MiniIconButton(
+                          icon: Icons.remove_rounded,
+                          onPressed: (widget.onRemoveSet != null && widget.exercise.sets > 1) ? _handleRemoveSet : null,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '${widget.exercise.sets}',
+                          style: AppTextStyles.label(weight: FontWeight.w900, color: AppColors.grey100),
+                        ),
+                        const SizedBox(width: 10),
+                        _MiniIconButton(
+                          icon: Icons.add_rounded,
+                          onPressed: widget.onAddSet != null ? _handleAddSet : null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   _SetsHeader(),
                   const SizedBox(height: 10),
                   for (var i = 0; i < widget.exercise.sets; i++) ...[
-                    _SetRow(
-                      setNumber: i + 1,
-                      completed: _isCompleted(i),
-                      weightController: _weightControllers[i],
-                      repsController: _repsControllers[i],
-                      suggestedReps: _suggestedLowerReps(widget.exercise.reps),
-                      onComplete: () => _handleComplete(i),
-                    ),
+                    if (i == 0)
+                      Container(
+                        key: _firstSetKey,
+                        child: _SetRow(
+                          setNumber: i + 1,
+                          completed: _isCompleted(i),
+                          weightController: _weightControllers[i],
+                          repsController: _repsControllers[i],
+                          suggestedReps: _suggestedLowerReps(widget.exercise.reps),
+                          onComplete: () => _handleComplete(i),
+                        ),
+                      )
+                    else
+                      _SetRow(
+                        setNumber: i + 1,
+                        completed: _isCompleted(i),
+                        weightController: _weightControllers[i],
+                        repsController: _repsControllers[i],
+                        suggestedReps: _suggestedLowerReps(widget.exercise.reps),
+                        onComplete: () => _handleComplete(i),
+                      ),
                     if (i != widget.exercise.sets - 1)
                       const SizedBox(height: 10),
                   ],
@@ -285,9 +445,10 @@ class _ExerciseCardState extends State<ExerciseCard> {
 }
 
 class _ExerciseMotionBanner extends StatelessWidget {
-  const _ExerciseMotionBanner({required this.exercise});
+  const _ExerciseMotionBanner({required this.exercise, this.onInfo});
 
   final Exercise exercise;
+  final VoidCallback? onInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +503,27 @@ class _ExerciseMotionBanner extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (onInfo != null)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Material(
+                        color: AppColors.black.withValues(alpha: 0.45),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          onTap: onInfo,
+                          customBorder: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.info_outline_rounded,
+                              size: 18,
+                              color: AppColors.volt.withValues(alpha: 0.95),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
                     left: 14,
                     right: 14,
@@ -379,53 +561,6 @@ class _ExerciseMotionBanner extends StatelessWidget {
   }
 }
 
-class _ProtocolBox extends StatelessWidget {
-  const _ProtocolBox({required this.exercise});
-
-  final Exercise exercise;
-
-  @override
-  Widget build(BuildContext context) {
-    final hint = exercise.instructions.isEmpty
-        ? ''
-        : exercise.instructions.length == 1
-            ? exercise.instructions.first
-            : '${exercise.instructions.first} ...';
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight.withValues(alpha: 0.50),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.white.withValues(alpha: 0.06)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.info_outline_rounded,
-                    size: 16, color: AppColors.volt),
-                const SizedBox(width: 8),
-                Text(
-                  'PROTOCOL',
-                  style: AppTextStyles.caps(weight: FontWeight.w800, letterSpacing: 1.8, color: AppColors.grey500),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              hint,
-              style: AppTextStyles.body(size: 12, color: AppColors.grey400, weight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SetsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -437,6 +572,33 @@ class _SetsHeader extends StatelessWidget {
         Expanded(child: Center(child: Text('REPS', style: style))),
         const SizedBox(width: 46),
       ],
+    );
+  }
+}
+
+class _MiniIconButton extends StatelessWidget {
+  const _MiniIconButton({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.surfaceHighlight,
+          disabledBackgroundColor: AppColors.surfaceHighlight.withValues(alpha: 0.65),
+          foregroundColor: AppColors.grey300,
+          disabledForegroundColor: AppColors.grey700,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: EdgeInsets.zero,
+        ),
+        onPressed: onPressed,
+        child: Icon(icon, size: 22),
+      ),
     );
   }
 }
