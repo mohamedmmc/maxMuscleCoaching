@@ -16,6 +16,7 @@ class ExerciseCard extends StatefulWidget {
     required this.onLogSet,
     required this.expanded,
     required this.onExpandedChanged,
+    this.editingEnabled = true,
     this.onShowDetails,
     this.onExerciseCompleted,
     this.onAddSet,
@@ -28,6 +29,7 @@ class ExerciseCard extends StatefulWidget {
   final void Function(int setIndex, double weight, double reps) onLogSet;
   final bool expanded;
   final ValueChanged<bool> onExpandedChanged;
+  final bool editingEnabled;
   final VoidCallback? onShowDetails;
   final VoidCallback? onExerciseCompleted;
   final VoidCallback? onAddSet;
@@ -191,6 +193,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
   }
 
   void _handleComplete(int setIndex) {
+    if (!widget.editingEnabled) return;
     if (_isCompleted(setIndex)) return;
 
     final weightText = _weightControllers[setIndex].text.trim();
@@ -207,10 +210,12 @@ class _ExerciseCardState extends State<ExerciseCard> {
   }
 
   void _handleAddSet() {
+    if (!widget.editingEnabled) return;
     widget.onAddSet?.call();
   }
 
   void _handleRemoveSet() {
+    if (!widget.editingEnabled) return;
     final nextSets = widget.exercise.sets - 1;
     if (nextSets < 1) return;
     final completedAfterTrim = widget.logs.where((l) => l.completed && l.setNumber <= nextSets).length >= nextSets;
@@ -385,7 +390,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
                         const Spacer(),
                         _MiniIconButton(
                           icon: Icons.remove_rounded,
-                          onPressed: (widget.onRemoveSet != null && widget.exercise.sets > 1) ? _handleRemoveSet : null,
+                          onPressed: (widget.editingEnabled && widget.onRemoveSet != null && widget.exercise.sets > 1) ? _handleRemoveSet : null,
                         ),
                         const SizedBox(width: 10),
                         Text(
@@ -395,7 +400,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
                         const SizedBox(width: 10),
                         _MiniIconButton(
                           icon: Icons.add_rounded,
-                          onPressed: widget.onAddSet != null ? _handleAddSet : null,
+                          onPressed: (widget.editingEnabled && widget.onAddSet != null) ? _handleAddSet : null,
                         ),
                       ],
                     ),
@@ -410,6 +415,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
                         child: _SetRow(
                           setNumber: i + 1,
                           completed: _isCompleted(i),
+                          enabled: widget.editingEnabled,
                           weightController: _weightControllers[i],
                           repsController: _repsControllers[i],
                           suggestedReps: _suggestedLowerReps(widget.exercise.reps),
@@ -420,6 +426,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
                       _SetRow(
                         setNumber: i + 1,
                         completed: _isCompleted(i),
+                        enabled: widget.editingEnabled,
                         weightController: _weightControllers[i],
                         repsController: _repsControllers[i],
                         suggestedReps: _suggestedLowerReps(widget.exercise.reps),
@@ -607,6 +614,7 @@ class _SetRow extends StatelessWidget {
   const _SetRow({
     required this.setNumber,
     required this.completed,
+    required this.enabled,
     required this.weightController,
     required this.repsController,
     required this.suggestedReps,
@@ -615,6 +623,7 @@ class _SetRow extends StatelessWidget {
 
   final int setNumber;
   final bool completed;
+  final bool enabled;
   final TextEditingController weightController;
   final TextEditingController repsController;
   final String suggestedReps;
@@ -655,7 +664,7 @@ class _SetRow extends StatelessWidget {
           ),
           Expanded(
             child: _NumberField(
-              enabled: !completed,
+              enabled: enabled && !completed,
               controller: weightController,
               hintText: '0',
               style: inputStyle,
@@ -666,7 +675,7 @@ class _SetRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _NumberField(
-              enabled: !completed,
+              enabled: enabled && !completed,
               controller: repsController,
               hintText: suggestedReps,
               style: inputStyle,
@@ -687,7 +696,7 @@ class _SetRow extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 padding: EdgeInsets.zero,
               ),
-              onPressed: completed ? null : onComplete,
+              onPressed: (enabled && !completed) ? onComplete : null,
               child: Icon(completed ? Icons.check_rounded : Icons.check_rounded, size: 22),
             ),
           ),

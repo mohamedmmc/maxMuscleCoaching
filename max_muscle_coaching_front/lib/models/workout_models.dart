@@ -402,17 +402,20 @@ class ActiveWorkoutSession {
     required this.workout,
     required this.startTimeMs,
     required this.exerciseLogs,
+    this.restEndTimeMs,
   });
 
   final DailyWorkout workout;
   final int startTimeMs;
   final List<ExerciseLog> exerciseLogs;
+  final int? restEndTimeMs;
 
   Map<String, Object?> toJson() {
     return {
       'workout': workout.toJson(),
       'startTimeMs': startTimeMs,
       'exerciseLogs': exerciseLogs.map((e) => e.toJson()).toList(growable: false),
+      if (restEndTimeMs != null) 'restEndTimeMs': restEndTimeMs,
     };
   }
 
@@ -433,6 +436,7 @@ class ActiveWorkoutSession {
       startTimeMs: (json['startTimeMs'] as num?)?.toInt() ?? 0,
       exerciseLogs:
           (rawExerciseLogs is List) ? rawExerciseLogs.whereType<Map>().map((e) => ExerciseLog.fromJson(e.cast<String, Object?>())).toList(growable: false) : const <ExerciseLog>[],
+      restEndTimeMs: (json['restEndTimeMs'] as num?)?.toInt(),
     );
   }
 

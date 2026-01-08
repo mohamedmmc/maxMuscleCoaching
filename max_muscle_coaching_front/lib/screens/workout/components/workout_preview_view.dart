@@ -9,11 +9,7 @@ class _PreviewView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final template = workout.template;
-    final systemBottomInset = MediaQuery.of(context).padding.bottom;
-    const dockContentHeight = 76.0;
-    const dockMinBottomPadding = 12.0;
-    final dockExtraPadding = (dockMinBottomPadding - systemBottomInset).clamp(0.0, double.infinity);
-    final dockHeightInSafeArea = dockContentHeight + dockExtraPadding;
+    final dockHeightInSafeArea = GlassDock.heightWithinSafeArea(context);
     const buttonHeight = 56.0;
     const buttonGap = 12.0;
     final buttonBottom = dockHeightInSafeArea + buttonGap;

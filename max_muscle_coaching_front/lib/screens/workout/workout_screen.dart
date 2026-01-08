@@ -12,6 +12,7 @@ import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
 import 'package:max_muscle_coaching_front/widgets/exercise_card.dart';
 import 'package:max_muscle_coaching_front/widgets/exercise_motion_thumbnail.dart';
 import 'package:max_muscle_coaching_front/widgets/exercise_motion_fullscreen_viewer.dart';
+import 'package:max_muscle_coaching_front/widgets/glass_dock.dart';
 import 'package:max_muscle_coaching_front/widgets/primary_button.dart';
 
 import 'workout_controller.dart';
@@ -73,8 +74,10 @@ class WorkoutScreen extends StatelessWidget {
             onLogSet: controller.logSet,
             onAddSet: controller.addSet,
             onRemoveSet: controller.removeSet,
+            onExerciseCompleted: controller.onExerciseCompleted,
             onFinish: handleFinish,
             isSaving: controller.finishing,
+            restLocked: controller.isRestTimerActive,
           ),
         );
       },
@@ -89,8 +92,10 @@ class _ActiveWorkoutView extends StatefulWidget {
     required this.onLogSet,
     required this.onAddSet,
     required this.onRemoveSet,
+    required this.onExerciseCompleted,
     required this.onFinish,
     required this.isSaving,
+    required this.restLocked,
   });
 
   final DailyWorkout workout;
@@ -98,8 +103,10 @@ class _ActiveWorkoutView extends StatefulWidget {
   final void Function(int exerciseIndex, int setIndex, double weight, double reps) onLogSet;
   final void Function(int exerciseIndex) onAddSet;
   final void Function(int exerciseIndex) onRemoveSet;
+  final void Function(int exerciseIndex) onExerciseCompleted;
   final Future<void> Function() onFinish;
   final bool isSaving;
+  final bool restLocked;
 
   @override
   State<_ActiveWorkoutView> createState() => _ActiveWorkoutViewState();
@@ -147,40 +154,198 @@ class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
   @override
   Widget build(BuildContext context) {
     final w = widget.workout;
+    final dockHeight = GlassDock.heightWithinSafeArea(context);
+    const restBannerBottomMargin = 16.0;
+    const restBannerHeight = 72.0;
+    const listExtraBottom = 32.0;
+    const listExtraWhenResting = restBannerBottomMargin + restBannerHeight + 24.0;
+    final listBottomPadding = dockHeight + (widget.restLocked ? listExtraWhenResting : listExtraBottom);
+    final bannerBottom = dockHeight + restBannerBottomMargin;
 
     return Column(
       children: [
         _ActiveHeader(title: w.focus, onFinish: widget.onFinish, isSaving: widget.isSaving),
         Expanded(
-          child: ListView.separated(
-            controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
-            cacheExtent: 2400,
-            itemCount: w.exercises.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 14),
-            itemBuilder: (context, idx) {
-              final exercise = w.exercises[idx];
-              final logs = idx < widget.exerciseLogs.length ? widget.exerciseLogs[idx].sets : const <WorkoutSetLog>[];
+          child: Stack(
+            children: [
+              ListView.separated(
+                controller: _scrollController,
+                padding: EdgeInsets.fromLTRB(16, 14, 16, listBottomPadding),
+                cacheExtent: 2400,
+                itemCount: w.exercises.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, idx) {
+                  final exercise = w.exercises[idx];
+                  final logs = idx < widget.exerciseLogs.length ? widget.exerciseLogs[idx].sets : const <WorkoutSetLog>[];
 
-              return Container(
-                key: _exerciseKeys[idx],
-                child: ExerciseCard(
-                  key: ValueKey(exercise.id),
-                  exercise: exercise,
-                  logs: logs,
-                  expanded: idx == _expandedIndex,
-                  onExpandedChanged: (value) => setState(() => _expandedIndex = value ? idx : -1),
-                  onShowDetails: () => _ExerciseDetailsSheet.show(context, exercise),
-                  onExerciseCompleted: () => _advanceTo(idx),
-                  onAddSet: () => widget.onAddSet(idx),
-                  onRemoveSet: () => widget.onRemoveSet(idx),
-                  onLogSet: (setIndex, weight, reps) => widget.onLogSet(idx, setIndex, weight, reps),
+                  return Container(
+                    key: _exerciseKeys[idx],
+                    child: ExerciseCard(
+                      key: ValueKey(exercise.id),
+                      exercise: exercise,
+                      logs: logs,
+                      editingEnabled: !widget.restLocked,
+                      expanded: idx == _expandedIndex,
+                      onExpandedChanged: (value) => setState(() => _expandedIndex = value ? idx : -1),
+                      onShowDetails: () => _ExerciseDetailsSheet.show(context, exercise),
+                      onExerciseCompleted: () {
+                        widget.onExerciseCompleted(idx);
+                        _advanceTo(idx);
+                      },
+                      onAddSet: () => widget.onAddSet(idx),
+                      onRemoveSet: () => widget.onRemoveSet(idx),
+                      onLogSet: (setIndex, weight, reps) => widget.onLogSet(idx, setIndex, weight, reps),
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: bannerBottom,
+                child: GetBuilder<WorkoutController>(
+                  id: WorkoutController.restTimerUpdateId,
+                  builder: (controller) {
+                    final remainingSeconds = controller.restRemainingSeconds;
+                    if (remainingSeconds <= 0) return const SizedBox.shrink();
+
+                    return _RestTimerBanner(
+                      remainingSeconds: remainingSeconds,
+                      onAdd15: () => controller.adjustRestTimerBySeconds(15),
+                      onRemove15: () => controller.adjustRestTimerBySeconds(-15),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RestTimerBanner extends StatelessWidget {
+  const _RestTimerBanner({
+    required this.remainingSeconds,
+    required this.onRemove15,
+    required this.onAdd15,
+  });
+
+  final int remainingSeconds;
+  final VoidCallback onRemove15;
+  final VoidCallback onAdd15;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.dark.withValues(alpha: 0.86),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.white.withValues(alpha: 0.10)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withValues(alpha: 0.35),
+                blurRadius: 26,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.volt.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.volt.withValues(alpha: 0.22)),
+                ),
+                child: const Icon(Icons.timer_rounded, color: AppColors.volt, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'REST',
+                      style: AppTextStyles.caps(weight: FontWeight.w900, letterSpacing: 2.0, color: AppColors.grey500),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatSeconds(remainingSeconds),
+                      style: AppTextStyles.title(size: 22, weight: FontWeight.w900, letterSpacing: -0.6),
+                    ),
+                  ],
+                ),
+              ),
+              _RestTimerAdjustButton(
+                icon: Icons.remove_rounded,
+                label: '15s',
+                onPressed: onRemove15,
+              ),
+              const SizedBox(width: 10),
+              _RestTimerAdjustButton(
+                icon: Icons.add_rounded,
+                label: '15s',
+                onPressed: onAdd15,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatSeconds(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+}
+
+class _RestTimerAdjustButton extends StatelessWidget {
+  const _RestTimerAdjustButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.surfaceHighlight,
+          foregroundColor: AppColors.grey100,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        onPressed: onPressed,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTextStyles.label(size: 12, weight: FontWeight.w900, letterSpacing: 0.2),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

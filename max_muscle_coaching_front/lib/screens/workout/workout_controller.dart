@@ -11,6 +11,8 @@ import 'package:max_muscle_coaching_front/repository/workout_repository.dart';
 class WorkoutController extends GetxController {
   final WorkoutRepository _workoutRepository = Get.find<WorkoutRepository>();
 
+  static const String restTimerUpdateId = 'rest_timer';
+
   DailyWorkout? workout;
   bool loading = true;
   bool active = false;
@@ -21,11 +23,35 @@ class WorkoutController extends GetxController {
   int? startTimeMs;
   List<ExerciseLog> exerciseLogs = const [];
   int? _workoutHistoryId;
+  Timer? _restTimer;
+  int? _restEndTimeMs;
+  int? _restFromExerciseIndex;
+  int? _restInitialSeconds;
+
+  bool get isRestTimerActive => _restEndTimeMs != null && DateTime.now().millisecondsSinceEpoch < _restEndTimeMs!;
+
+  int get restRemainingSeconds {
+    final endTimeMs = _restEndTimeMs;
+    if (endTimeMs == null) return 0;
+    final remainingMs = endTimeMs - DateTime.now().millisecondsSinceEpoch;
+    if (remainingMs <= 0) return 0;
+    return (remainingMs / 1000).ceil();
+  }
+
+  int? get restFromExerciseIndex => _restFromExerciseIndex;
+  int? get restInitialSeconds => _restInitialSeconds;
 
   @override
   void onInit() {
     super.onInit();
     unawaited(_initWorkout());
+  }
+
+  @override
+  void onClose() {
+    _restTimer?.cancel();
+    _restTimer = null;
+    super.onClose();
   }
 
   Future<void> _initWorkout() async {
@@ -47,6 +73,7 @@ class WorkoutController extends GetxController {
       startTimeMs = session.startTimeMs;
       exerciseLogs = session.exerciseLogs;
       active = true;
+      _restoreRestTimer(session.restEndTimeMs);
       loading = false;
       update();
       return;
@@ -85,6 +112,7 @@ class WorkoutController extends GetxController {
     exerciseLogs = mapped.exerciseLogs;
     active = false;
     startTimeMs = null;
+    _clearRestTimer(notify: false);
     loading = false;
     update();
   }
@@ -94,17 +122,39 @@ class WorkoutController extends GetxController {
     if (w == null) return;
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    final session = ActiveWorkoutSession(
-      workout: w,
-      startTimeMs: now,
-      exerciseLogs: exerciseLogs,
-    );
+    final session = _buildActiveSession(workout: w, startTimeMs: now, exerciseLogs: exerciseLogs);
 
     active = true;
     startTimeMs = now;
     update();
 
     unawaited(AppController.find.saveActiveSession(session));
+  }
+
+  void onExerciseCompleted(int exerciseIndex) {
+    final w = workout;
+    if (!active || w == null) return;
+    if (exerciseIndex < 0 || exerciseIndex >= w.exercises.length) return;
+
+    final restSeconds = w.exercises[exerciseIndex].restSeconds ?? 0;
+    if (restSeconds <= 0) return;
+    _startRestTimer(seconds: restSeconds, fromExerciseIndex: exerciseIndex);
+  }
+
+  void adjustRestTimerBySeconds(int deltaSeconds) {
+    final endTimeMs = _restEndTimeMs;
+    if (endTimeMs == null) return;
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final nextEndTimeMs = endTimeMs + (deltaSeconds * 1000);
+    if (nextEndTimeMs <= nowMs) {
+      _clearRestTimer(notify: true);
+      return;
+    }
+
+    _restEndTimeMs = nextEndTimeMs;
+    update([restTimerUpdateId]);
+    _persistActiveSession();
   }
 
   void logSet(int exerciseIndex, int setIndex, double weight, double reps) {
@@ -136,14 +186,7 @@ class WorkoutController extends GetxController {
     exerciseLogs = updated;
     update();
 
-    if (active && startTimeMs != null) {
-      final session = ActiveWorkoutSession(
-        workout: w,
-        startTimeMs: startTimeMs!,
-        exerciseLogs: updated,
-      );
-      unawaited(AppController.find.saveActiveSession(session));
-    }
+    _persistActiveSession(overrideWorkout: w, overrideExerciseLogs: updated);
 
     unawaited(_syncExerciseProgress(exerciseIndex));
   }
@@ -180,14 +223,7 @@ class WorkoutController extends GetxController {
     exerciseLogs = updatedLogs;
     update();
 
-    if (active && startTimeMs != null) {
-      final session = ActiveWorkoutSession(
-        workout: updatedWorkout,
-        startTimeMs: startTimeMs!,
-        exerciseLogs: updatedLogs,
-      );
-      unawaited(AppController.find.saveActiveSession(session));
-    }
+    _persistActiveSession(overrideWorkout: updatedWorkout, overrideExerciseLogs: updatedLogs);
 
     unawaited(_syncExerciseProgress(exerciseIndex));
   }
@@ -222,12 +258,81 @@ class WorkoutController extends GetxController {
       await AppController.find.clearActiveSession();
       active = false;
       startTimeMs = null;
+      _clearRestTimer(notify: false);
       update();
       return response.completed == true || msg == 'work_already_done';
     } finally {
       finishing = false;
       update();
     }
+  }
+
+  ActiveWorkoutSession _buildActiveSession({
+    required DailyWorkout workout,
+    required int startTimeMs,
+    required List<ExerciseLog> exerciseLogs,
+  }) {
+    return ActiveWorkoutSession(
+      workout: workout,
+      startTimeMs: startTimeMs,
+      exerciseLogs: exerciseLogs,
+      restEndTimeMs: _restEndTimeMs,
+    );
+  }
+
+  void _persistActiveSession({DailyWorkout? overrideWorkout, List<ExerciseLog>? overrideExerciseLogs}) {
+    final w = overrideWorkout ?? workout;
+    final start = startTimeMs;
+    if (!active || w == null || start == null) return;
+
+    final session = _buildActiveSession(
+      workout: w,
+      startTimeMs: start,
+      exerciseLogs: overrideExerciseLogs ?? exerciseLogs,
+    );
+    unawaited(AppController.find.saveActiveSession(session));
+  }
+
+  void _restoreRestTimer(int? restEndTimeMs) {
+    _restEndTimeMs = restEndTimeMs;
+    if (!isRestTimerActive) {
+      _clearRestTimer(notify: false);
+      return;
+    }
+    _startRestTicker();
+  }
+
+  void _startRestTimer({required int seconds, required int fromExerciseIndex}) {
+    if (seconds <= 0) return;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    _restEndTimeMs = nowMs + (seconds * 1000);
+    _restFromExerciseIndex = fromExerciseIndex;
+    _restInitialSeconds = seconds;
+    _startRestTicker();
+    update();
+    _persistActiveSession();
+  }
+
+  void _startRestTicker() {
+    _restTimer?.cancel();
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!isRestTimerActive) {
+        _clearRestTimer(notify: true);
+        return;
+      }
+      update([restTimerUpdateId]);
+    });
+    update([restTimerUpdateId]);
+  }
+
+  void _clearRestTimer({required bool notify}) {
+    _restTimer?.cancel();
+    _restTimer = null;
+    _restEndTimeMs = null;
+    _restFromExerciseIndex = null;
+    _restInitialSeconds = null;
+    if (notify) update();
+    _persistActiveSession();
   }
 
   Future<void> _syncExerciseProgress(int exerciseIndex) async {

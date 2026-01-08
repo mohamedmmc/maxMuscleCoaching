@@ -93,7 +93,7 @@ class AppController extends GetxController {
           return;
         }
       }
-      if (activeJwt != null && !JwtDecoder.isExpired(activeJwt)) {
+      if (!JwtDecoder.isExpired(activeJwt)) {
         final remoteUser = await UserRepository.find.getLoggedInUser();
         if (remoteUser != null) {
           user = remoteUser;

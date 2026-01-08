@@ -5,6 +5,7 @@ import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
 import 'package:max_muscle_coaching_front/models/models.dart';
 import 'package:max_muscle_coaching_front/theme/app_colors.dart';
 import 'package:max_muscle_coaching_front/theme/app_text_styles.dart';
+import 'package:max_muscle_coaching_front/widgets/glass_dock.dart';
 import 'package:max_muscle_coaching_front/widgets/simple_area_chart.dart';
 
 import 'dashboard_controller.dart';
@@ -58,7 +59,7 @@ class DashboardScreen extends StatelessWidget {
 
             return SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 120),
+                padding: EdgeInsets.fromLTRB(20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

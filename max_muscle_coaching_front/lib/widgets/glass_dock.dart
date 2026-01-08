@@ -13,6 +13,15 @@ class GlassDock extends StatelessWidget {
     super.key,
   });
 
+  static const double contentHeight = 76.0;
+  static const double minBottomPadding = 12.0;
+
+  static double heightWithinSafeArea(BuildContext context) {
+    final systemBottomInset = MediaQuery.of(context).padding.bottom;
+    final extraPadding = (minBottomPadding - systemBottomInset).clamp(0.0, double.infinity);
+    return contentHeight + extraPadding;
+  }
+
   final int currentIndex;
   final VoidCallback onTapDashboard;
   final VoidCallback onTapWorkout;
