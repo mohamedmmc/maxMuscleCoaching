@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
 import 'package:max_muscle_coaching_front/models/models.dart';
-import 'package:max_muscle_coaching_front/models/user_model.dart';
 import 'package:max_muscle_coaching_front/repository/user_repository.dart';
 import 'package:max_muscle_coaching_front/services/connectivity_service.dart';
 import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
@@ -60,13 +59,13 @@ class OnboardingController extends GetxController {
       age: age,
       weight: weight,
       height: height,
-      gender: gender.name,
-      fitnessLevel: fitnessLevel.name,
+      gender: gender,
+      fitnessLevel: fitnessLevel,
       injuryHistory: injuryHistory.isEmpty ? null : injuryHistory,
-      split: split.name,
+      split: split,
       daysPerWeek: daysPerWeek,
       sessionDurationMinutes: sessionDuration,
-      location: location.name,
+      location: location,
     );
   }
 
@@ -136,7 +135,13 @@ class OnboardingController extends GetxController {
     confirmPasswordError = confirmPassword != password;
     update();
 
-    return !(nameError || emailError || ageError || weightError || heightError || passwordError || confirmPasswordError);
+    return !(nameError ||
+        emailError ||
+        ageError ||
+        weightError ||
+        heightError ||
+        passwordError ||
+        confirmPasswordError);
   }
 
   void nextStep() {

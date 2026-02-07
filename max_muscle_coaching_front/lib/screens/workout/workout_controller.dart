@@ -199,6 +199,53 @@ class WorkoutController extends GetxController {
     _updateExerciseSetCount(exerciseIndex, delta: -1);
   }
 
+  void removeSetAt(int exerciseIndex, int setIndex) {
+    final w = workout;
+    if (w == null) return;
+    if (exerciseIndex < 0 || exerciseIndex >= w.exercises.length) return;
+
+    final currentExercise = w.exercises[exerciseIndex];
+    if (currentExercise.sets <= 1) return;
+    if (setIndex < 0 || setIndex >= currentExercise.sets) return;
+
+    final nextSets = (currentExercise.sets - 1).clamp(1, 999).toInt();
+    final removedSetNumber = setIndex + 1;
+
+    final updatedExercises = [...w.exercises];
+    updatedExercises[exerciseIndex] = currentExercise.copyWith(sets: nextSets);
+    final updatedWorkout = w.copyWith(exercises: updatedExercises);
+
+    final updatedLogs = [...exerciseLogs];
+    if (exerciseIndex >= 0 && exerciseIndex < updatedLogs.length) {
+      final currentLog = updatedLogs[exerciseIndex];
+      final shifted = <WorkoutSetLog>[];
+      for (final s in currentLog.sets) {
+        if (s.setNumber == removedSetNumber) continue;
+        var nextNumber = s.setNumber;
+        if (nextNumber > removedSetNumber) nextNumber -= 1;
+        if (nextNumber <= nextSets) {
+          shifted.add(
+            WorkoutSetLog(
+              setNumber: nextNumber,
+              reps: s.reps,
+              weight: s.weight,
+              completed: s.completed,
+            ),
+          );
+        }
+      }
+      shifted.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+      updatedLogs[exerciseIndex] = currentLog.copyWith(sets: shifted);
+    }
+
+    workout = updatedWorkout;
+    exerciseLogs = updatedLogs;
+    update();
+
+    _persistActiveSession(overrideWorkout: updatedWorkout, overrideExerciseLogs: updatedLogs);
+    unawaited(_syncExerciseProgress(exerciseIndex));
+  }
+
   void _updateExerciseSetCount(int exerciseIndex, {required int delta}) {
     final w = workout;
     if (w == null) return;

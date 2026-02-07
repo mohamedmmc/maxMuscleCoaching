@@ -1,3 +1,2 @@
-export 'user_profile.dart';
+export 'user_model.dart';
 export 'workout_models.dart';
-

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
-import 'package:max_muscle_coaching_front/models/user_profile.dart';
+import 'package:max_muscle_coaching_front/models/models.dart';
 import 'package:max_muscle_coaching_front/theme/app_colors.dart';
 import 'package:max_muscle_coaching_front/theme/app_text_styles.dart';
 import 'package:max_muscle_coaching_front/widgets/glass_dock.dart';
@@ -28,11 +28,13 @@ class ProfileScreen extends StatelessWidget {
             final displayName = (user.name ?? '').trim();
             final email = (user.email ?? '').trim();
             final headerStyle = AppTextStyles.display(letterSpacing: -1.4);
-            final headerAccentStyle = headerStyle.copyWith(color: AppColors.volt);
+            final headerAccentStyle =
+                headerStyle.copyWith(color: AppColors.volt);
 
             return SafeArea(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
+                padding: EdgeInsets.fromLTRB(
+                    20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -88,7 +90,9 @@ class ProfileScreen extends StatelessWidget {
                                             shape: BoxShape.circle),
                                         child: Center(
                                           child: Text(
-                                            displayName.isNotEmpty ? displayName.characters.first : '?',
+                                            displayName.isNotEmpty
+                                                ? displayName.characters.first
+                                                : '?',
                                             style: AppTextStyles.title(
                                               size: 30,
                                               weight: FontWeight.w900,
@@ -105,7 +109,9 @@ class ProfileScreen extends StatelessWidget {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            displayName.isEmpty ? 'Athlete' : displayName,
+                                            displayName.isEmpty
+                                                ? 'Athlete'
+                                                : displayName,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: AppTextStyles.title(
@@ -136,7 +142,10 @@ class ProfileScreen extends StatelessWidget {
                                                   BorderRadius.circular(10),
                                             ),
                                             child: Text(
-                                              _fitnessLabel(user.fitnessLevel).toUpperCase(),
+                                              (user.fitnessLevel?.label ??
+                                                      FitnessLevel
+                                                          .beginner.label)
+                                                  .toUpperCase(),
                                               style: AppTextStyles.caps(
                                                 size: 10,
                                                 weight: FontWeight.w900,
@@ -156,15 +165,17 @@ class ProfileScreen extends StatelessWidget {
                                     Expanded(
                                       child: _MiniStat(
                                         label: 'WEIGHT',
-                                        value:
-                                            user.weight == null ? '—' : '${user.weight!.toStringAsFixed(0)} kg',
+                                        value: user.weight == null
+                                            ? '—'
+                                            : '${user.weight!.toStringAsFixed(0)} kg',
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: _MiniStat(
                                         label: 'SPLIT',
-                                        value: _splitLabel(user.split),
+                                        value: user.split?.label ??
+                                            WorkoutSplit.ppl.label,
                                         valueStyle: AppTextStyles.title(
                                           size: 14,
                                           weight: FontWeight.w900,
@@ -273,20 +284,4 @@ class _MiniStat extends StatelessWidget {
       ),
     );
   }
-}
-
-String _fitnessLabel(String? raw) {
-  if (raw == null) return FitnessLevel.beginner.label;
-  for (final level in FitnessLevel.values) {
-    if (level.name == raw) return level.label;
-  }
-  return raw;
-}
-
-String _splitLabel(String? raw) {
-  if (raw == null) return WorkoutSplit.ppl.label;
-  for (final split in WorkoutSplit.values) {
-    if (split.name == raw) return split.label;
-  }
-  return raw;
 }

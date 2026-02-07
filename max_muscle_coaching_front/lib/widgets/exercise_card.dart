@@ -21,6 +21,7 @@ class ExerciseCard extends StatefulWidget {
     this.onExerciseCompleted,
     this.onAddSet,
     this.onRemoveSet,
+    this.onRemoveSetAt,
     super.key,
   });
 
@@ -34,6 +35,7 @@ class ExerciseCard extends StatefulWidget {
   final VoidCallback? onExerciseCompleted;
   final VoidCallback? onAddSet;
   final VoidCallback? onRemoveSet;
+  final void Function(int setIndex)? onRemoveSetAt;
 
   @override
   State<ExerciseCard> createState() => _ExerciseCardState();
@@ -45,14 +47,16 @@ class _ExerciseCardState extends State<ExerciseCard> {
   bool _bulkUpdating = false;
   final GlobalKey _firstSetKey = GlobalKey();
   Timer? _scrollToFirstSetTimer;
+  int? _pendingRemovedSetIndex;
+  late final List<int> _setRowIds;
+  int _nextSetRowId = 0;
 
   @override
   void initState() {
     super.initState();
-    _weightControllers =
-        List.generate(widget.exercise.sets, (_) => TextEditingController());
-    _repsControllers =
-        List.generate(widget.exercise.sets, (_) => TextEditingController());
+    _weightControllers = List.generate(widget.exercise.sets, (_) => TextEditingController());
+    _repsControllers = List.generate(widget.exercise.sets, (_) => TextEditingController());
+    _setRowIds = List.generate(widget.exercise.sets, (_) => _nextSetRowId++);
     _seedDefaultValues();
     _applyLogsToControllers(widget.logs);
     _bindBulkSync();
@@ -66,7 +70,14 @@ class _ExerciseCardState extends State<ExerciseCard> {
   void didUpdateWidget(covariant ExerciseCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.exercise.sets != widget.exercise.sets) {
-      _syncControllersWithSets();
+      final pending = _pendingRemovedSetIndex;
+      _pendingRemovedSetIndex = null;
+      _syncSetRowIds(oldSetCount: oldWidget.exercise.sets, removedSetIndex: pending);
+      if (pending != null && widget.exercise.sets == oldWidget.exercise.sets - 1 && pending >= 0 && pending < oldWidget.exercise.sets) {
+        _rebuildControllersAfterRemoval(removedSetIndex: pending);
+      } else {
+        _syncControllersWithSets();
+      }
     }
     if (oldWidget.logs != widget.logs) {
       _applyLogsToControllers(widget.logs);
@@ -113,8 +124,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
       _repsControllers[index].text = _formatNum(log.reps);
     }
 
-    final last = logs.where((l) => l.completed).toList()
-      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    final last = logs.where((l) => l.completed).toList()..sort((a, b) => a.setNumber.compareTo(b.setNumber));
     if (last.isNotEmpty) {
       final lastWeight = _formatNum(last.last.weight);
       final lastReps = _formatNum(last.last.reps);
@@ -192,6 +202,54 @@ class _ExerciseCardState extends State<ExerciseCard> {
     _applyLogsToControllers(widget.logs);
   }
 
+  void _rebuildControllersAfterRemoval({required int removedSetIndex}) {
+    final desiredSets = widget.exercise.sets;
+    final oldWeights = List<TextEditingController>.from(_weightControllers);
+    final oldReps = List<TextEditingController>.from(_repsControllers);
+
+    _weightControllers.clear();
+    _repsControllers.clear();
+
+    for (var nextIndex = 0; nextIndex < desiredSets; nextIndex++) {
+      final oldIndex = nextIndex < removedSetIndex ? nextIndex : nextIndex + 1;
+      _weightControllers.add(TextEditingController(text: oldWeights[oldIndex].text));
+      _repsControllers.add(TextEditingController(text: oldReps[oldIndex].text));
+    }
+
+    for (final c in oldWeights) {
+      c.dispose();
+    }
+    for (final c in oldReps) {
+      c.dispose();
+    }
+
+    _bindBulkSync();
+    _applyLogsToControllers(widget.logs);
+  }
+
+  void _syncSetRowIds({required int oldSetCount, int? removedSetIndex}) {
+    final desiredSets = widget.exercise.sets;
+    final currentSets = _setRowIds.length;
+    if (desiredSets == currentSets) return;
+
+    if (desiredSets < currentSets) {
+      if (removedSetIndex != null &&
+          oldSetCount == currentSets &&
+          desiredSets == currentSets - 1 &&
+          removedSetIndex >= 0 &&
+          removedSetIndex < currentSets) {
+        _setRowIds.removeAt(removedSetIndex);
+      } else {
+        _setRowIds.removeRange(desiredSets, currentSets);
+      }
+      return;
+    }
+
+    for (var i = currentSets; i < desiredSets; i++) {
+      _setRowIds.add(_nextSetRowId++);
+    }
+  }
+
   void _handleComplete(int setIndex) {
     if (!widget.editingEnabled) return;
     if (_isCompleted(setIndex)) return;
@@ -221,6 +279,33 @@ class _ExerciseCardState extends State<ExerciseCard> {
     final completedAfterTrim = widget.logs.where((l) => l.completed && l.setNumber <= nextSets).length >= nextSets;
     widget.onRemoveSet?.call();
     if (completedAfterTrim) widget.onExerciseCompleted?.call();
+  }
+
+  void _handleRemoveSetAt(int setIndex) {
+    if (!widget.editingEnabled) return;
+    if (widget.exercise.sets <= 1) return;
+    if (setIndex < 0 || setIndex >= widget.exercise.sets) return;
+
+    final cb = widget.onRemoveSetAt;
+    if (cb == null) return;
+
+    final removedSetNumber = setIndex + 1;
+    final nextSets = widget.exercise.sets - 1;
+    final completedAfterRemoval = widget.logs
+            .where((l) => l.completed)
+            .where((l) => l.setNumber != removedSetNumber)
+            .map((l) {
+              var nextNumber = l.setNumber;
+              if (nextNumber > removedSetNumber) nextNumber -= 1;
+              return nextNumber;
+            })
+            .where((n) => n <= nextSets)
+            .length >=
+        nextSets;
+
+    _pendingRemovedSetIndex = setIndex;
+    cb(setIndex);
+    if (completedAfterRemoval) widget.onExerciseCompleted?.call();
   }
 
   void _scrollToFirstSet() {
@@ -255,8 +340,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
   @override
   Widget build(BuildContext context) {
     final completedSets = _completedSets();
-    final progress =
-        widget.exercise.sets == 0 ? 0.0 : completedSets / widget.exercise.sets;
+    final progress = widget.exercise.sets == 0 ? 0.0 : completedSets / widget.exercise.sets;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -342,14 +426,12 @@ class _ExerciseCardState extends State<ExerciseCard> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(6),
-                        child: Icon(
-                          widget.expanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.grey500,
+                          child: Icon(
+                            widget.expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.grey500,
+                          ),
                         ),
                       ),
-                    ),
                     ],
                   ),
                 ),
@@ -361,8 +443,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(
                       widthFactor: progress.clamp(0, 1),
-                      child: const SizedBox(
-                          height: 4, child: ColoredBox(color: AppColors.volt)),
+                      child: const SizedBox(height: 4, child: ColoredBox(color: AppColors.volt)),
                     ),
                   ),
                 ),
@@ -371,8 +452,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
           ),
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 200),
-            crossFadeState:
-                widget.expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            crossFadeState: widget.expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
             firstChild: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
@@ -409,31 +489,59 @@ class _ExerciseCardState extends State<ExerciseCard> {
                   _SetsHeader(),
                   const SizedBox(height: 10),
                   for (var i = 0; i < widget.exercise.sets; i++) ...[
-                    if (i == 0)
-                      Container(
-                        key: _firstSetKey,
-                        child: _SetRow(
-                          setNumber: i + 1,
-                          completed: _isCompleted(i),
-                          enabled: widget.editingEnabled,
-                          weightController: _weightControllers[i],
-                          repsController: _repsControllers[i],
-                          suggestedReps: _suggestedLowerReps(widget.exercise.reps),
-                          onComplete: () => _handleComplete(i),
-                        ),
-                      )
-                    else
-                      _SetRow(
-                        setNumber: i + 1,
-                        completed: _isCompleted(i),
-                        enabled: widget.editingEnabled,
-                        weightController: _weightControllers[i],
-                        repsController: _repsControllers[i],
-                        suggestedReps: _suggestedLowerReps(widget.exercise.reps),
-                        onComplete: () => _handleComplete(i),
-                      ),
-                    if (i != widget.exercise.sets - 1)
-                      const SizedBox(height: 10),
+                    Builder(
+                      builder: (context) {
+                        final setIndex = i;
+                        final row = setIndex == 0
+                            ? Container(
+                                key: _firstSetKey,
+                                child: _SetRow(
+                                  setNumber: setIndex + 1,
+                                  completed: _isCompleted(setIndex),
+                                  enabled: widget.editingEnabled,
+                                  weightController: _weightControllers[setIndex],
+                                  repsController: _repsControllers[setIndex],
+                                  suggestedReps: _suggestedLowerReps(widget.exercise.reps),
+                                  onComplete: () => _handleComplete(setIndex),
+                                ),
+                              )
+                            : _SetRow(
+                                setNumber: setIndex + 1,
+                                completed: _isCompleted(setIndex),
+                                enabled: widget.editingEnabled,
+                                weightController: _weightControllers[setIndex],
+                                repsController: _repsControllers[setIndex],
+                                suggestedReps: _suggestedLowerReps(widget.exercise.reps),
+                                onComplete: () => _handleComplete(setIndex),
+                              );
+
+                        final canSwipeRemove = widget.onRemoveSetAt != null && widget.editingEnabled && widget.exercise.sets > 1;
+                        if (!canSwipeRemove) return row;
+
+                        final swipeRightToLeftDirection = (Directionality.of(context) == TextDirection.rtl) ? DismissDirection.startToEnd : DismissDirection.endToStart;
+
+                        final background = Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.errorBackground(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          alignment: Alignment.centerRight,
+                          child: Icon(Icons.delete_rounded, color: AppColors.red400),
+                        );
+
+                        return Dismissible(
+                          key: ValueKey('set_${widget.exercise.id}_${_setRowIds[setIndex]}'),
+                          direction: swipeRightToLeftDirection,
+                          background: background,
+                          secondaryBackground: background,
+                          confirmDismiss: (_) async => widget.onRemoveSetAt != null && widget.editingEnabled && widget.exercise.sets > 1,
+                          onDismissed: (_) => _handleRemoveSetAt(setIndex),
+                          child: row,
+                        );
+                      },
+                    ),
+                    if (i != widget.exercise.sets - 1) const SizedBox(height: 10),
                   ],
                 ],
               ),

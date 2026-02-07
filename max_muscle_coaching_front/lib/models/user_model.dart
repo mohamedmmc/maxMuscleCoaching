@@ -1,4 +1,77 @@
-import 'package:max_muscle_coaching_front/networking/api_base_helper.dart';
+enum Gender {
+  male,
+  female;
+
+  String get label => switch (this) {
+        Gender.male => 'Male',
+        Gender.female => 'Female',
+      };
+}
+
+enum WorkoutSplit {
+  ppl,
+  upperLower,
+  fullBody,
+  broSplit;
+
+  String get label => switch (this) {
+        WorkoutSplit.ppl => 'PPL',
+        WorkoutSplit.upperLower => 'Upper/Lower',
+        WorkoutSplit.fullBody => 'Full Body',
+        WorkoutSplit.broSplit => 'Bro Split',
+      };
+}
+
+enum FitnessLevel {
+  beginner,
+  intermediate,
+  advanced;
+
+  String get label => switch (this) {
+        FitnessLevel.beginner => 'Beginner',
+        FitnessLevel.intermediate => 'Intermediate',
+        FitnessLevel.advanced => 'Advanced',
+      };
+}
+
+enum TrainingLocation {
+  gym,
+  home;
+
+  String get label => switch (this) {
+        TrainingLocation.gym => 'Gym',
+        TrainingLocation.home => 'Home',
+      };
+}
+
+const splitDescriptions = <WorkoutSplit, String>{
+  WorkoutSplit.broSplit:
+      'Focus on one major muscle group per day (e.g., Chest, Back, Legs).',
+  WorkoutSplit.ppl: 'Divide training into pushing, pulling, and leg movements.',
+  WorkoutSplit.fullBody: 'Train the entire body in every session.',
+  WorkoutSplit.upperLower:
+      'Alternate between upper body and lower body sessions.',
+};
+
+T? _enumOrNull<T extends Enum>(List<T> values, Object? raw) {
+  final normalized = raw?.toString().trim();
+  if (normalized == null || normalized.isEmpty) return null;
+  for (final v in values) {
+    if (v.name == normalized) return v;
+  }
+  final lower = normalized.toLowerCase();
+  for (final v in values) {
+    if (v.name.toLowerCase() == lower) return v;
+  }
+  return null;
+}
+
+DateTime? _dateTimeOrNull(Object? raw) {
+  if (raw == null) return null;
+  final text = raw.toString().trim();
+  if (text.isEmpty) return null;
+  return DateTime.tryParse(text);
+}
 
 class User {
   int? id;
@@ -17,13 +90,13 @@ class User {
   double? weight;
   double? height;
   DateTime? birthdate;
-  String? gender;
-  String? fitnessLevel;
+  Gender? gender;
+  FitnessLevel? fitnessLevel;
   String? injuryHistory;
-  String? split;
+  WorkoutSplit? split;
   int? daysPerWeek;
   int? sessionDurationMinutes;
-  String? location;
+  TrainingLocation? location;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -57,7 +130,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as int?,
+      id: (json['id'] as num?)?.toInt(),
       name: json['name'] as String?,
       firstName: json['firstName'] as String?,
       lastName: json['lastName'] as String?,
@@ -69,28 +142,31 @@ class User {
       appleId: json['appleId'] as String?,
       picture: json['picture'] as String?,
       isVerified: json['isVerified'] as bool?,
-      age: json['age'] as int?,
-      weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
-      height: json['height'] != null ? (json['height'] as num).toDouble() : null,
-      birthdate: json['birthdate'] != null ? DateTime.parse(json['birthdate'] as String) : null,
-      gender: json['gender'] as String?,
-      fitnessLevel: json['fitnessLevel'] as String?,
+      age: (json['age'] as num?)?.toInt(),
+      weight:
+          json['weight'] != null ? (json['weight'] as num).toDouble() : null,
+      height:
+          json['height'] != null ? (json['height'] as num).toDouble() : null,
+      birthdate: _dateTimeOrNull(json['birthdate']),
+      gender: _enumOrNull(Gender.values, json['gender']),
+      fitnessLevel: _enumOrNull(FitnessLevel.values, json['fitnessLevel']),
       injuryHistory: json['injuryHistory'] as String?,
-      split: json['split'] as String?,
-      daysPerWeek: json['daysPerWeek'] as int?,
-      sessionDurationMinutes: json['sessionDurationMinutes'] as int?,
-      location: json['location'] as String?,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
+      split: _enumOrNull(WorkoutSplit.values, json['split']),
+      daysPerWeek: (json['daysPerWeek'] as num?)?.toInt(),
+      sessionDurationMinutes: (json['sessionDurationMinutes'] as num?)?.toInt(),
+      location: _enumOrNull(TrainingLocation.values, json['location']),
+      createdAt: _dateTimeOrNull(json['createdAt']),
+      updatedAt: _dateTimeOrNull(json['updatedAt']),
     );
   }
+
   factory User.fromToken(Map<String, dynamic> payload) => User(
         id: payload['id'],
         name: payload['name'],
         lastName: payload['lastName'],
         phoneNumber: payload['phone'],
         email: payload['email'],
-        picture: payload['picture'] != null ? ApiBaseHelper().getClientImage(payload['picture']) : null,
+        picture: payload['picture']?.toString(),
       );
 
   Map<String, dynamic> toSocialJson() {
@@ -132,13 +208,13 @@ class User {
       'weight': weight,
       'height': height,
       'birthdate': birthdate?.toIso8601String().split('T')[0],
-      'gender': gender,
-      'fitnessLevel': fitnessLevel,
+      'gender': gender?.name,
+      'fitnessLevel': fitnessLevel?.name,
       'injuryHistory': injuryHistory,
-      'split': split,
+      'split': split?.name,
       'daysPerWeek': daysPerWeek,
       'sessionDurationMinutes': sessionDurationMinutes,
-      'location': location,
+      'location': location?.name,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -161,13 +237,13 @@ class User {
     double? weight,
     double? height,
     DateTime? birthdate,
-    String? gender,
-    String? fitnessLevel,
+    Gender? gender,
+    FitnessLevel? fitnessLevel,
     String? injuryHistory,
-    String? split,
+    WorkoutSplit? split,
     int? daysPerWeek,
     int? sessionDurationMinutes,
-    String? location,
+    TrainingLocation? location,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -193,7 +269,8 @@ class User {
       injuryHistory: injuryHistory ?? this.injuryHistory,
       split: split ?? this.split,
       daysPerWeek: daysPerWeek ?? this.daysPerWeek,
-      sessionDurationMinutes: sessionDurationMinutes ?? this.sessionDurationMinutes,
+      sessionDurationMinutes:
+          sessionDurationMinutes ?? this.sessionDurationMinutes,
       location: location ?? this.location,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

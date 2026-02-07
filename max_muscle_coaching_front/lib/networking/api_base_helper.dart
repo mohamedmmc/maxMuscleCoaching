@@ -31,7 +31,7 @@ extension RequestTypeExtension on RequestType {
   }
 }
 
-const String ip = '172.20.10.6';
+const String ip = '192.168.1.73';
 // const String ip = '192.168.100.8';
 
 const String baseUrlLocalWeb = 'http://localhost:3001'; // web localhost

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
 import 'package:max_muscle_coaching_front/screens/dashboard/dashboard_screen.dart';
 import 'package:max_muscle_coaching_front/screens/profile/profile_screen.dart';
 import 'package:max_muscle_coaching_front/screens/workout/workout_screen.dart';
@@ -22,15 +23,20 @@ class HomeShell extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: PageView(
-                    controller: controller.pageController,
-                    onPageChanged: controller.onPageChanged,
-                    physics: const BouncingScrollPhysics(),
-                    children: [
-                      DashboardScreen(onResumeSession: () => controller.setIndex(1)),
-                      WorkoutScreen(onWorkoutFinished: () => controller.setIndex(0)),
-                      const ProfileScreen(),
-                    ],
+                  child: GetBuilder<AppController>(
+                    builder: (app) {
+                      final disableSwipe = controller.currentIndex == 1 && app.activeSession != null;
+                      return PageView(
+                        controller: controller.pageController,
+                        onPageChanged: controller.onPageChanged,
+                        physics: disableSwipe ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
+                        children: [
+                          DashboardScreen(onResumeSession: () => controller.setIndex(1)),
+                          WorkoutScreen(onWorkoutFinished: () => controller.setIndex(0)),
+                          const ProfileScreen(),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 Positioned(

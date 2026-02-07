@@ -35,7 +35,8 @@ class WorkoutScreen extends StatelessWidget {
         if (user == null) return const SizedBox.shrink();
 
         if (controller.loading) {
-          return _LoadingView(splitLabel: _splitLabel(user.split));
+          return _LoadingView(
+              splitLabel: user.split?.label ?? WorkoutSplit.ppl.label);
         }
 
         final w = controller.workout;
@@ -43,7 +44,8 @@ class WorkoutScreen extends StatelessWidget {
           if (controller.workoutAlreadyDone) {
             return const _AlreadyDoneView();
           }
-          final message = controller.emptyStateMessage ?? 'Failed to load workout.';
+          final message =
+              controller.emptyStateMessage ?? 'Failed to load workout.';
           return SafeArea(child: Center(child: Text(message)));
         }
 
@@ -74,6 +76,7 @@ class WorkoutScreen extends StatelessWidget {
             onLogSet: controller.logSet,
             onAddSet: controller.addSet,
             onRemoveSet: controller.removeSet,
+            onRemoveSetAt: controller.removeSetAt,
             onExerciseCompleted: controller.onExerciseCompleted,
             onFinish: handleFinish,
             isSaving: controller.finishing,
@@ -92,6 +95,7 @@ class _ActiveWorkoutView extends StatefulWidget {
     required this.onLogSet,
     required this.onAddSet,
     required this.onRemoveSet,
+    required this.onRemoveSetAt,
     required this.onExerciseCompleted,
     required this.onFinish,
     required this.isSaving,
@@ -100,9 +104,11 @@ class _ActiveWorkoutView extends StatefulWidget {
 
   final DailyWorkout workout;
   final List<ExerciseLog> exerciseLogs;
-  final void Function(int exerciseIndex, int setIndex, double weight, double reps) onLogSet;
+  final void Function(
+      int exerciseIndex, int setIndex, double weight, double reps) onLogSet;
   final void Function(int exerciseIndex) onAddSet;
   final void Function(int exerciseIndex) onRemoveSet;
+  final void Function(int exerciseIndex, int setIndex) onRemoveSetAt;
   final void Function(int exerciseIndex) onExerciseCompleted;
   final Future<void> Function() onFinish;
   final bool isSaving;
@@ -121,14 +127,16 @@ class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _exerciseKeys = List.generate(widget.workout.exercises.length, (_) => GlobalKey());
+    _exerciseKeys =
+        List.generate(widget.workout.exercises.length, (_) => GlobalKey());
   }
 
   @override
   void didUpdateWidget(covariant _ActiveWorkoutView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.workout.exercises.length != widget.workout.exercises.length) {
-      _exerciseKeys = List.generate(widget.workout.exercises.length, (_) => GlobalKey());
+      _exerciseKeys =
+          List.generate(widget.workout.exercises.length, (_) => GlobalKey());
       if (_expandedIndex >= widget.workout.exercises.length) {
         _expandedIndex = widget.workout.exercises.isEmpty ? -1 : 0;
       }
@@ -158,13 +166,18 @@ class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
     const restBannerBottomMargin = 16.0;
     const restBannerHeight = 72.0;
     const listExtraBottom = 32.0;
-    const listExtraWhenResting = restBannerBottomMargin + restBannerHeight + 24.0;
-    final listBottomPadding = dockHeight + (widget.restLocked ? listExtraWhenResting : listExtraBottom);
+    const listExtraWhenResting =
+        restBannerBottomMargin + restBannerHeight + 24.0;
+    final listBottomPadding = dockHeight +
+        (widget.restLocked ? listExtraWhenResting : listExtraBottom);
     final bannerBottom = dockHeight + restBannerBottomMargin;
 
     return Column(
       children: [
-        _ActiveHeader(title: w.focus, onFinish: widget.onFinish, isSaving: widget.isSaving),
+        _ActiveHeader(
+            title: w.focus,
+            onFinish: widget.onFinish,
+            isSaving: widget.isSaving),
         Expanded(
           child: Stack(
             children: [
@@ -176,7 +189,9 @@ class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
                 separatorBuilder: (_, __) => const SizedBox(height: 14),
                 itemBuilder: (context, idx) {
                   final exercise = w.exercises[idx];
-                  final logs = idx < widget.exerciseLogs.length ? widget.exerciseLogs[idx].sets : const <WorkoutSetLog>[];
+                  final logs = idx < widget.exerciseLogs.length
+                      ? widget.exerciseLogs[idx].sets
+                      : const <WorkoutSetLog>[];
 
                   return Container(
                     key: _exerciseKeys[idx],
@@ -186,15 +201,20 @@ class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
                       logs: logs,
                       editingEnabled: !widget.restLocked,
                       expanded: idx == _expandedIndex,
-                      onExpandedChanged: (value) => setState(() => _expandedIndex = value ? idx : -1),
-                      onShowDetails: () => _ExerciseDetailsSheet.show(context, exercise),
+                      onExpandedChanged: (value) =>
+                          setState(() => _expandedIndex = value ? idx : -1),
+                      onShowDetails: () =>
+                          _ExerciseDetailsSheet.show(context, exercise),
                       onExerciseCompleted: () {
                         widget.onExerciseCompleted(idx);
                         _advanceTo(idx);
                       },
                       onAddSet: () => widget.onAddSet(idx),
                       onRemoveSet: () => widget.onRemoveSet(idx),
-                      onLogSet: (setIndex, weight, reps) => widget.onLogSet(idx, setIndex, weight, reps),
+                      onRemoveSetAt: (setIndex) =>
+                          widget.onRemoveSetAt(idx, setIndex),
+                      onLogSet: (setIndex, weight, reps) =>
+                          widget.onLogSet(idx, setIndex, weight, reps),
                     ),
                   );
                 },
@@ -212,7 +232,8 @@ class _ActiveWorkoutViewState extends State<_ActiveWorkoutView> {
                     return _RestTimerBanner(
                       remainingSeconds: remainingSeconds,
                       onAdd15: () => controller.adjustRestTimerBySeconds(15),
-                      onRemove15: () => controller.adjustRestTimerBySeconds(-15),
+                      onRemove15: () =>
+                          controller.adjustRestTimerBySeconds(-15),
                     );
                   },
                 ),
@@ -264,9 +285,11 @@ class _RestTimerBanner extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.volt.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.volt.withValues(alpha: 0.22)),
+                  border:
+                      Border.all(color: AppColors.volt.withValues(alpha: 0.22)),
                 ),
-                child: const Icon(Icons.timer_rounded, color: AppColors.volt, size: 22),
+                child: const Icon(Icons.timer_rounded,
+                    color: AppColors.volt, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -276,12 +299,18 @@ class _RestTimerBanner extends StatelessWidget {
                   children: [
                     Text(
                       'REST',
-                      style: AppTextStyles.caps(weight: FontWeight.w900, letterSpacing: 2.0, color: AppColors.grey500),
+                      style: AppTextStyles.caps(
+                          weight: FontWeight.w900,
+                          letterSpacing: 2.0,
+                          color: AppColors.grey500),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       _formatSeconds(remainingSeconds),
-                      style: AppTextStyles.title(size: 22, weight: FontWeight.w900, letterSpacing: -0.6),
+                      style: AppTextStyles.title(
+                          size: 22,
+                          weight: FontWeight.w900,
+                          letterSpacing: -0.6),
                     ),
                   ],
                 ),
@@ -330,7 +359,8 @@ class _RestTimerAdjustButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.surfaceHighlight,
           foregroundColor: AppColors.grey100,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 12),
         ),
         onPressed: onPressed,
@@ -341,7 +371,8 @@ class _RestTimerAdjustButton extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: AppTextStyles.label(size: 12, weight: FontWeight.w900, letterSpacing: 0.2),
+              style: AppTextStyles.label(
+                  size: 12, weight: FontWeight.w900, letterSpacing: 0.2),
             ),
           ],
         ),
@@ -387,7 +418,8 @@ class _LoadingView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Optimizing for $splitLabel...',
-                style: AppTextStyles.body(color: AppColors.grey500, weight: FontWeight.w600),
+                style: AppTextStyles.body(
+                    color: AppColors.grey500, weight: FontWeight.w600),
               ),
             ],
           ),
@@ -395,14 +427,6 @@ class _LoadingView extends StatelessWidget {
       ),
     );
   }
-}
-
-String _splitLabel(String? raw) {
-  if (raw == null) return WorkoutSplit.ppl.label;
-  for (final split in WorkoutSplit.values) {
-    if (split.name == raw) return split.label;
-  }
-  return raw;
 }
 
 class _RestDayView extends StatelessWidget {
@@ -430,7 +454,8 @@ class _RestDayView extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.schedule_rounded, color: AppColors.volt, size: 60),
+                child: const Icon(Icons.schedule_rounded,
+                    color: AppColors.volt, size: 60),
               ),
               const SizedBox(height: 18),
               Text(
@@ -441,7 +466,8 @@ class _RestDayView extends StatelessWidget {
               Text(
                 'Muscles grow during rest. Hit your macros and sleep well.',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.body(color: AppColors.grey400, weight: FontWeight.w600),
+                style: AppTextStyles.body(
+                    color: AppColors.grey400, weight: FontWeight.w600),
               ),
             ],
           ),
@@ -476,7 +502,8 @@ class _AlreadyDoneView extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.verified_rounded, color: AppColors.volt, size: 60),
+                child: const Icon(Icons.verified_rounded,
+                    color: AppColors.volt, size: 60),
               ),
               const SizedBox(height: 18),
               Text(
@@ -487,7 +514,8 @@ class _AlreadyDoneView extends StatelessWidget {
               Text(
                 'Today’s session is already completed. Come back tomorrow for your next plan.',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.body(color: AppColors.grey400, weight: FontWeight.w600),
+                style: AppTextStyles.body(
+                    color: AppColors.grey400, weight: FontWeight.w600),
               ),
             ],
           ),
@@ -498,7 +526,8 @@ class _AlreadyDoneView extends StatelessWidget {
 }
 
 class _ActiveHeader extends StatelessWidget {
-  const _ActiveHeader({required this.title, required this.onFinish, required this.isSaving});
+  const _ActiveHeader(
+      {required this.title, required this.onFinish, required this.isSaving});
 
   final String title;
   final Future<void> Function() onFinish;
@@ -513,7 +542,9 @@ class _ActiveHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
             color: AppColors.dark.withValues(alpha: 0.82),
-            border: Border(bottom: BorderSide(color: AppColors.white.withValues(alpha: 0.05))),
+            border: Border(
+                bottom:
+                    BorderSide(color: AppColors.white.withValues(alpha: 0.05))),
           ),
           child: Row(
             children: [
@@ -534,13 +565,16 @@ class _ActiveHeader extends StatelessWidget {
                           width: 6,
                           height: 6,
                           child: DecoratedBox(
-                            decoration: BoxDecoration(color: AppColors.volt, shape: BoxShape.circle),
+                            decoration: BoxDecoration(
+                                color: AppColors.volt, shape: BoxShape.circle),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'SESSION ACTIVE',
-                          style: AppTextStyles.caps(color: AppColors.volt.withValues(alpha: 0.95), letterSpacing: 2.0),
+                          style: AppTextStyles.caps(
+                              color: AppColors.volt.withValues(alpha: 0.95),
+                              letterSpacing: 2.0),
                         ),
                       ],
                     ),
@@ -551,13 +585,16 @@ class _ActiveHeader extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.red900.withValues(alpha: 0.20),
                   foregroundColor: AppColors.red300,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
                 onPressed: isSaving ? null : () => unawaited(onFinish()),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 160),
-                  transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+                  transitionBuilder: (child, anim) =>
+                      FadeTransition(opacity: anim, child: child),
                   child: isSaving
                       ? Row(
                           key: const ValueKey('saving'),
@@ -566,19 +603,28 @@ class _ActiveHeader extends StatelessWidget {
                             const SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(AppColors.white70)),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                      AppColors.white70)),
                             ),
                             const SizedBox(width: 10),
                             Text(
                               'SAVING',
-                              style: AppTextStyles.label(size: 12, weight: FontWeight.w900, letterSpacing: 1.6),
+                              style: AppTextStyles.label(
+                                  size: 12,
+                                  weight: FontWeight.w900,
+                                  letterSpacing: 1.6),
                             ),
                           ],
                         )
                       : Text(
                           key: ValueKey('end'),
                           'END RUN',
-                          style: AppTextStyles.label(size: 12, weight: FontWeight.w900, letterSpacing: 1.6),
+                          style: AppTextStyles.label(
+                              size: 12,
+                              weight: FontWeight.w900,
+                              letterSpacing: 1.6),
                         ),
                 ),
               ),
