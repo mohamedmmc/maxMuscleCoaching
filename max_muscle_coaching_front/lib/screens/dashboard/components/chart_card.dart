@@ -2,19 +2,28 @@ part of '../dashboard_screen.dart';
 
 class _ChartCard extends StatelessWidget {
   const _ChartCard({
-    required this.categories,
-    required this.selectedCategory,
-    required this.onSelectCategory,
     required this.points,
+    this.categories,
+    this.selectedCategory,
+    this.onSelectCategory,
+    this.title = 'Performance',
+    this.badgeLabel = 'LIVE',
   });
 
-  final List<String> categories;
-  final String selectedCategory;
-  final ValueChanged<String> onSelectCategory;
   final List<ChartPoint> points;
+  final List<String>? categories;
+  final String? selectedCategory;
+  final ValueChanged<String>? onSelectCategory;
+  final String title;
+  final String badgeLabel;
 
   @override
   Widget build(BuildContext context) {
+    final showCategories = categories != null &&
+        categories!.isNotEmpty &&
+        selectedCategory != null &&
+        onSelectCategory != null;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -28,42 +37,51 @@ class _ChartCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Performance', style: AppTextStyles.title(size: 18, weight: FontWeight.w800, fontStyle: FontStyle.normal)),
+              Text(title,
+                  style: AppTextStyles.title(
+                      size: 18,
+                      weight: FontWeight.w800,
+                      fontStyle: FontStyle.normal)),
               Row(
                 children: [
                   const SizedBox(
                     width: 8,
                     height: 8,
-                    child: DecoratedBox(decoration: BoxDecoration(color: AppColors.volt, shape: BoxShape.circle)),
+                    child: DecoratedBox(
+                        decoration: BoxDecoration(
+                            color: AppColors.volt, shape: BoxShape.circle)),
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'LIVE',
-                    style: AppTextStyles.caps(color: AppColors.volt, letterSpacing: 2.0),
+                    badgeLabel,
+                    style: AppTextStyles.caps(
+                        color: AppColors.volt, letterSpacing: 2.0),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: categories
-                  .map(
-                    (c) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _CategoryChip(
-                        label: c,
-                        selected: c == selectedCategory,
-                        onTap: () => onSelectCategory(c),
+          if (showCategories) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: categories!
+                    .map(
+                      (c) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _CategoryChip(
+                          label: c,
+                          selected: c == selectedCategory,
+                          onTap: () => onSelectCategory!(c),
+                        ),
                       ),
-                    ),
-                  )
-                  .toList(growable: false),
+                    )
+                    .toList(growable: false),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
+          ],
           SimpleAreaChart(points: points),
         ],
       ),
@@ -72,7 +90,8 @@ class _ChartCard extends StatelessWidget {
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.label, required this.selected, required this.onTap});
+  const _CategoryChip(
+      {required this.label, required this.selected, required this.onTap});
 
   final String label;
   final bool selected;

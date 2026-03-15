@@ -15,7 +15,8 @@ const WorkoutTemplateExercise = require("../models/workout_template_exercise_mod
 const WorkoutHistory = require("../models/workout_history_model");
 const WorkoutHistoryExercise = require("../models/workout_history_exercise_model");
 const Exercise = require("../models/exercise_model");
-// const Muscle = require("../models/muscle_model");
+const Muscle = require("../models/muscle_model");
+const ExerciseMuscle = require("../models/exercise_muscle_model");
 const Instruction = require("../models/instruction_model");
 const Gallery = require("../models/gallery_model");
 const fs = require("fs");
@@ -34,7 +35,7 @@ class WorkoutService {
    */
   async _ensureHistoryExercisesFromTemplate(
     workoutHistoryId,
-    workoutTemplateId
+    workoutTemplateId,
   ) {
     const planned = await WorkoutTemplateExercise.findAll({
       where: { workoutTemplateId },
@@ -106,6 +107,99 @@ class WorkoutService {
     return date.toISOString().slice(0, 10);
   }
 
+  _normalizeKey(value) {
+    if (typeof value !== "string") return "";
+    return value.trim().toLowerCase();
+  }
+
+  _normalizeFitnessLevel(value) {
+    const level = this._normalizeKey(value);
+    if (!level) return "Beginner";
+    if (level.startsWith("beg")) return "Beginner";
+    if (level.startsWith("int")) return "Intermediate";
+    if (
+      level.startsWith("adv") ||
+      level.startsWith("exp") ||
+      level === "expert" ||
+      level === "pro"
+    )
+      return "Advanced";
+    return "Beginner";
+  }
+
+  _normalizeLocation(value) {
+    const location = this._normalizeKey(value);
+    if (!location) return "Gym";
+    if (location.startsWith("home")) return "Home";
+    if (location.startsWith("gym")) return "Gym";
+    return "Gym";
+  }
+
+  _normalizeSplit(value) {
+    const split = this._normalizeKey(value);
+    if (!split) return "Push/Pull/Legs";
+
+    const compact = split.replace(/[^a-z]/g, "");
+
+    if (
+      compact === "ppl" ||
+      compact === "pushpulllegs" ||
+      compact.includes("pushpulllegs")
+    ) {
+      return "Push/Pull/Legs";
+    }
+    if (compact === "upperlower" || compact.includes("upperlower")) {
+      return "Upper/Lower";
+    }
+    if (compact === "fullbody" || compact.includes("fullbody")) {
+      return "Full Body";
+    }
+    if (
+      compact === "brosplit" ||
+      compact.includes("brosplit") ||
+      compact === "bro"
+    ) {
+      return "Bro Split";
+    }
+
+    return "Push/Pull/Legs";
+  }
+
+  _candidateFitnessLevels(value) {
+    const normalized = this._normalizeFitnessLevel(value);
+    if (normalized === "Advanced")
+      return ["Advanced", "Intermediate", "Beginner"];
+    if (normalized === "Intermediate") return ["Intermediate", "Beginner"];
+    return ["Beginner"];
+  }
+
+  _candidateLocations(value) {
+    const normalized = this._normalizeLocation(value);
+    if (normalized === "Home") return ["Home", "Gym"];
+    if (normalized === "Gym") return ["Gym", "Home"];
+    return ["Gym"];
+  }
+
+  async _getOrCreateRestDayTemplate() {
+    const existing = await WorkoutTemplate.findOne({
+      where: { isRestDay: true },
+      order: [["id", "ASC"]],
+    });
+    if (existing) return existing;
+
+    return WorkoutTemplate.create({
+      name: "Rest Day - Mobility & Stretching",
+      dayOfWeek: "Any",
+      category: "Rest",
+      split: "Any",
+      fitnessLevel: "Any",
+      location: "Any",
+      focus: "Rest & Recovery",
+      estimatedDurationMinutes: 0,
+      isRestDay: true,
+    });
+  }
+
   _trainingDaysForDaysPerWeek(daysPerWeek) {
     const days = Number(daysPerWeek) || 4;
     // 0=Sun ... 6=Sat
@@ -117,7 +211,7 @@ class WorkoutService {
   }
 
   _categoriesForSplit(split) {
-    switch (split) {
+    switch (this._normalizeSplit(split)) {
       case "Push/Pull/Legs":
         return ["Push", "Pull", "Legs"];
       case "Upper/Lower":
@@ -161,17 +255,21 @@ class WorkoutService {
   }
 
   /**
-   * Recomputes and persists `WorkoutHistory.completed` based on progress rows.
+   * Auto-completes `WorkoutHistory.completed` once all exercises are completed.
+   * This never unsets `completed` back to false.
    */
   async _syncWorkoutHistoryCompletion(workoutHistoryId) {
-    const stats = await this._getWorkoutHistoryExerciseCompletion(
-      workoutHistoryId
-    );
+    const stats =
+      await this._getWorkoutHistoryExerciseCompletion(workoutHistoryId);
 
-    await WorkoutHistory.update(
-      { completed: Boolean(stats.allCompleted) },
-      { where: { id: workoutHistoryId } }
-    );
+    // Once a workout history is marked completed (manual finish or auto-complete),
+    // do not unset it back to false if the user later edits exercise completion.
+    if (stats.allCompleted) {
+      await WorkoutHistory.update(
+        { completed: true },
+        { where: { id: workoutHistoryId, completed: false } },
+      );
+    }
 
     return stats;
   }
@@ -187,9 +285,9 @@ class WorkoutService {
   async getRecommendedTemplatesForUser(user, options = {}) {
     const { includeExercises = true, limit, excludeRestDays = true } = options;
 
-    const split = user.split || "Push/Pull/Legs";
-    const fitnessLevel = user.fitnessLevel || "Beginner";
-    const location = user.location || "Gym";
+    const split = this._normalizeSplit(user.split);
+    const fitnessLevel = this._normalizeFitnessLevel(user.fitnessLevel);
+    const location = this._normalizeLocation(user.location);
     const categories = this._categoriesForSplit(split);
 
     const whereClause = {
@@ -232,6 +330,18 @@ class WorkoutService {
               include: [
                 { model: Gallery, required: false },
                 { model: Instruction, required: false },
+                {
+                  model: Muscle,
+                  as: "primaryMuscles",
+                  through: { attributes: [] },
+                  required: false,
+                },
+                {
+                  model: Muscle,
+                  as: "secondaryMuscles",
+                  through: { attributes: [] },
+                  required: false,
+                },
               ],
             },
           ]
@@ -245,7 +355,7 @@ class WorkoutService {
         json.Exercises.sort(
           (a, b) =>
             (a.WorkoutTemplateExercise?.orderIndex ?? 0) -
-            (b.WorkoutTemplateExercise?.orderIndex ?? 0)
+            (b.WorkoutTemplateExercise?.orderIndex ?? 0),
         );
       }
       return json;
@@ -255,12 +365,11 @@ class WorkoutService {
   /**
    * Returns (or creates) today's workout session for a user.
    *
-   * If today's session is already completed (all exercises checked), returns:
+   * If today's session is already completed (finished/validated), returns:
    * `{ message: "work_already_done", dateAssigned, workoutHistoryId }`.
    */
   async getTodayWorkoutForUser(user) {
     const today = new Date();
-    today.setDate(today.getDate() + 5);
 
     const dateAssigned = this._dateOnly(today);
 
@@ -280,11 +389,11 @@ class WorkoutService {
 
       await this._ensureHistoryExercisesFromTemplate(
         existing.id,
-        existing.workoutTemplateId
+        existing.workoutTemplateId,
       );
 
       const stats = await this._getWorkoutHistoryExerciseCompletion(
-        existing.id
+        existing.id,
       );
       if (stats.allCompleted && !existing.WorkoutTemplate?.isRestDay) {
         return {
@@ -317,10 +426,22 @@ class WorkoutService {
               include: [
                 { model: Gallery, required: false },
                 { model: Instruction, required: false },
+                {
+                  model: Muscle,
+                  as: "primaryMuscles",
+                  through: { attributes: [] },
+                  required: false,
+                },
+                {
+                  model: Muscle,
+                  as: "secondaryMuscles",
+                  through: { attributes: [] },
+                  required: false,
+                },
               ],
             },
           ],
-        }
+        },
       );
 
       const payload =
@@ -329,7 +450,7 @@ class WorkoutService {
         payload.Exercises.sort(
           (a, b) =>
             (a.WorkoutTemplateExercise?.orderIndex ?? 0) -
-            (b.WorkoutTemplateExercise?.orderIndex ?? 0)
+            (b.WorkoutTemplateExercise?.orderIndex ?? 0),
         );
       }
 
@@ -342,38 +463,35 @@ class WorkoutService {
       };
     }
 
+    const split = this._normalizeSplit(user.split);
+    const fitnessLevel = this._normalizeFitnessLevel(user.fitnessLevel);
+    const location = this._normalizeLocation(user.location);
+
     const dayIndex = today.getDay();
     const category = this._pickCategoryForToday({
-      split: user.split,
+      split,
       daysPerWeek: user.daysPerWeek,
       dayIndex,
     });
 
     if (!category) {
-      const restTemplate = await WorkoutTemplate.findOne({
-        where: { isRestDay: true },
-        order: [["id", "ASC"]],
+      const restTemplate = await this._getOrCreateRestDayTemplate();
+      const history = await WorkoutHistory.create({
+        userId: user.id,
+        workoutTemplateId: restTemplate.id,
+        dateAssigned,
+        completed: false,
       });
-
-      let history = null;
-      if (restTemplate) {
-        history = await WorkoutHistory.create({
-          userId: user.id,
-          workoutTemplateId: restTemplate.id,
-          dateAssigned,
-          completed: false,
-        });
-        await this._ensureHistoryExercisesFromTemplate(
-          history.id,
-          restTemplate.id
-        );
-      }
+      await this._ensureHistoryExercisesFromTemplate(
+        history.id,
+        restTemplate.id,
+      );
 
       return {
         dateAssigned,
         restDay: true,
-        workoutHistoryId: history?.id ?? null,
-        template: restTemplate?.toJSON?.() || null,
+        workoutHistoryId: history.id,
+        template: restTemplate.toJSON(),
         exerciseProgress: [],
       };
     }
@@ -390,56 +508,125 @@ class WorkoutService {
     });
     const recentIds = recent.map((row) => row.workoutTemplateId);
 
-    const whereClause = {
-      split: user.split || "Push/Pull/Legs",
-      fitnessLevel: user.fitnessLevel || "Beginner",
-      location: user.location || "Gym",
+    const fitnessLevelCandidates = this._candidateFitnessLevels(fitnessLevel);
+    const locationCandidates = this._candidateLocations(location);
+
+    const durationClause = user.sessionDurationMinutes
+      ? {
+          estimatedDurationMinutes: {
+            [Op.between]: [
+              Math.max(0, user.sessionDurationMinutes - 15),
+              user.sessionDurationMinutes + 15,
+            ],
+          },
+        }
+      : {};
+
+    const baseWhere = {
+      split,
       category,
       isRestDay: false,
-      ...(recentIds.length ? { id: { [Op.notIn]: recentIds } } : {}),
     };
 
-    if (user.sessionDurationMinutes) {
-      whereClause.estimatedDurationMinutes = {
-        [Op.between]: [
-          Math.max(0, user.sessionDurationMinutes - 15),
-          user.sessionDurationMinutes + 15,
+    const tryFindTemplate = async (extraWhere) => {
+      const candidate = await WorkoutTemplate.findOne({
+        where: { ...baseWhere, ...extraWhere },
+        order: [["id", "ASC"]],
+      });
+      if (!candidate) return null;
+
+      const plannedCount = await WorkoutTemplateExercise.count({
+        where: { workoutTemplateId: candidate.id },
+      });
+      return plannedCount > 0 ? candidate : null;
+    };
+
+    let template = null;
+
+    // 1) Strict match (avoid repeats + match duration)
+    for (const lvl of fitnessLevelCandidates) {
+      for (const loc of locationCandidates) {
+        template = await tryFindTemplate({
+          fitnessLevel: lvl,
+          location: loc,
+          ...(recentIds.length ? { id: { [Op.notIn]: recentIds } } : {}),
+          ...durationClause,
+        });
+        if (template) break;
+      }
+      if (template) break;
+    }
+
+    // 2) Same, but ignore duration
+    if (!template && Object.keys(durationClause).length) {
+      for (const lvl of fitnessLevelCandidates) {
+        for (const loc of locationCandidates) {
+          template = await tryFindTemplate({
+            fitnessLevel: lvl,
+            location: loc,
+            ...(recentIds.length ? { id: { [Op.notIn]: recentIds } } : {}),
+          });
+          if (template) break;
+        }
+        if (template) break;
+      }
+    }
+
+    // 3) Allow repeats (ignore recentIds)
+    if (!template) {
+      for (const lvl of fitnessLevelCandidates) {
+        for (const loc of locationCandidates) {
+          template = await tryFindTemplate({
+            fitnessLevel: lvl,
+            location: loc,
+            ...durationClause,
+          });
+          if (template) break;
+        }
+        if (template) break;
+      }
+    }
+
+    // 4) Last resort: any template for this split/category (still non-rest)
+    if (!template) {
+      template = await tryFindTemplate({});
+    }
+
+    // 5) Absolute fallback: any non-rest template at all
+    if (!template) {
+      template = await WorkoutTemplate.findOne({
+        where: { isRestDay: false },
+        order: [["id", "ASC"]],
+        include: [
+          {
+            model: Exercise,
+            required: true,
+            attributes: [],
+            through: { attributes: [] },
+          },
         ],
-      };
-    }
-
-    let template = await WorkoutTemplate.findOne({
-      where: whereClause,
-      order: [["id", "ASC"]],
-    });
-
-    if (!template && whereClause.estimatedDurationMinutes) {
-      delete whereClause.estimatedDurationMinutes;
-      template = await WorkoutTemplate.findOne({
-        where: whereClause,
-        order: [["id", "ASC"]],
       });
     }
 
+    // If we still can't find a workout, degrade to rest day (never return empty)
     if (!template) {
-      template = await WorkoutTemplate.findOne({
-        where: {
-          split: whereClause.split,
-          fitnessLevel: whereClause.fitnessLevel,
-          location: whereClause.location,
-          category: whereClause.category,
-          isRestDay: false,
-        },
-        order: [["id", "ASC"]],
+      const restTemplate = await this._getOrCreateRestDayTemplate();
+      const history = await WorkoutHistory.create({
+        userId: user.id,
+        workoutTemplateId: restTemplate.id,
+        dateAssigned,
+        completed: false,
       });
-    }
-
-    if (!template) {
+      await this._ensureHistoryExercisesFromTemplate(
+        history.id,
+        restTemplate.id,
+      );
       return {
         dateAssigned,
-        restDay: false,
-        workoutHistoryId: null,
-        template: null,
+        restDay: true,
+        workoutHistoryId: history.id,
+        template: restTemplate.toJSON(),
+        exerciseProgress: [],
       };
     }
 
@@ -462,6 +649,18 @@ class WorkoutService {
           include: [
             { model: Gallery, required: false },
             { model: Instruction, required: false },
+            {
+              model: Muscle,
+              as: "primaryMuscles",
+              through: { attributes: [] },
+              required: false,
+            },
+            {
+              model: Muscle,
+              as: "secondaryMuscles",
+              through: { attributes: [] },
+              required: false,
+            },
           ],
         },
       ],
@@ -472,7 +671,7 @@ class WorkoutService {
       payload.Exercises.sort(
         (a, b) =>
           (a.WorkoutTemplateExercise?.orderIndex ?? 0) -
-          (b.WorkoutTemplateExercise?.orderIndex ?? 0)
+          (b.WorkoutTemplateExercise?.orderIndex ?? 0),
       );
     }
 
@@ -487,6 +686,454 @@ class WorkoutService {
       workoutHistoryId: history.id,
       template: payload,
       exerciseProgress: progressRows.map((row) => row.toJSON()),
+    };
+  }
+
+  async getWorkoutStatsForUser(user, options = {}) {
+    const isDateOnly = (value) =>
+      typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+    const clampInt = (value, { min, max, fallback }) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return fallback;
+      const intValue = Math.floor(num);
+      if (intValue < min) return fallback;
+      return Math.min(max, intValue);
+    };
+
+    const shiftDateOnly = (dateOnly, deltaDays) => {
+      const date = new Date(`${dateOnly}T00:00:00.000Z`);
+      if (Number.isNaN(date.getTime())) return null;
+      date.setUTCDate(date.getUTCDate() + deltaDays);
+      return this._dateOnly(date);
+    };
+
+    const endDate = isDateOnly(options.to)
+      ? options.to
+      : this._dateOnly(new Date());
+    const days = clampInt(options.days, { min: 1, max: 365, fallback: 30 });
+    const startDate =
+      isDateOnly(options.from) ? options.from : shiftDateOnly(endDate, -(days - 1));
+
+    const topMusclesLimit = clampInt(options.topMusclesLimit, {
+      min: 1,
+      max: 50,
+      fallback: 10,
+    });
+
+    const histories = await WorkoutHistory.findAll({
+      where: {
+        userId: user.id,
+        dateAssigned: { [Op.between]: [startDate, endDate] },
+      },
+      attributes: ["id", "workoutTemplateId", "dateAssigned", "completed", "createdAt", "updatedAt"],
+      include: [
+        {
+          model: WorkoutTemplate,
+          required: false,
+          attributes: [
+            "id",
+            "name",
+            "split",
+            "category",
+            "fitnessLevel",
+            "location",
+            "estimatedDurationMinutes",
+            "isRestDay",
+          ],
+        },
+      ],
+      order: [
+        ["dateAssigned", "ASC"],
+        ["id", "ASC"],
+      ],
+    });
+
+    const historyIds = histories.map((h) => h.id);
+
+    const progressRows = historyIds.length
+      ? await WorkoutHistoryExercise.findAll({
+          where: { workoutHistoryId: { [Op.in]: historyIds } },
+          attributes: [
+            "workoutHistoryId",
+            "exerciseId",
+            "completed",
+            "performedSets",
+          ],
+          raw: true,
+        })
+      : [];
+
+    const progressByHistoryId = new Map();
+    const exerciseIds = new Set();
+
+    for (const row of progressRows) {
+      if (row?.workoutHistoryId) {
+        const list = progressByHistoryId.get(row.workoutHistoryId) || [];
+        list.push(row);
+        progressByHistoryId.set(row.workoutHistoryId, list);
+      }
+      if (row?.exerciseId) exerciseIds.add(row.exerciseId);
+    }
+
+    const exerciseIdList = Array.from(exerciseIds);
+    const muscleLinks = exerciseIdList.length
+      ? await ExerciseMuscle.findAll({
+          where: { exerciseId: { [Op.in]: exerciseIdList } },
+          attributes: ["exerciseId", "muscleId", "role"],
+          include: [
+            {
+              model: Muscle,
+              required: true,
+              attributes: ["id", "name"],
+            },
+          ],
+          raw: true,
+        })
+      : [];
+
+    const musclesByExerciseId = new Map();
+    for (const link of muscleLinks) {
+      const exerciseId = link.exerciseId;
+      const muscleId = link.muscleId;
+      const role = link.role;
+      const muscleName = link["Muscle.name"];
+      if (!exerciseId || !muscleId || !muscleName || !role) continue;
+
+      const list = musclesByExerciseId.get(exerciseId) || [];
+      list.push({ id: muscleId, name: muscleName, role });
+      musclesByExerciseId.set(exerciseId, list);
+    }
+
+    const normalizePerformedSets = (performedSets) => {
+      if (Array.isArray(performedSets)) return performedSets;
+      if (typeof performedSets === "string") {
+        try {
+          const parsed = JSON.parse(performedSets);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const workoutPerformanceLabel = (completionRate) => {
+      if (completionRate >= 1) return "perfect";
+      if (completionRate >= 0.75) return "good";
+      if (completionRate >= 0.5) return "ok";
+      return "low";
+    };
+
+    const pointsForSession = ({ finished, restDay, exercisesCompleted, performedSetsCount }) => {
+      if (!finished) return 0;
+      const base = restDay ? 25 : 100;
+      const exerciseBonus = Math.max(0, Number(exercisesCompleted) || 0) * 10;
+      const setBonus = Math.max(0, Number(performedSetsCount) || 0) * 2;
+      return base + exerciseBonus + setBonus;
+    };
+
+    const overallMuscleMap = new Map(); // muscleId -> { id, name, primaryExercises, secondaryExercises, days: Set<string> }
+
+    const byDay = [];
+
+    let sessionsTotal = histories.length;
+    let sessionsFinished = 0;
+    let workoutSessionsTotal = 0;
+    let workoutSessionsFinished = 0;
+    let restDaySessionsTotal = 0;
+    let restDaySessionsFinished = 0;
+
+    let exercisesTotal = 0;
+    let exercisesCompleted = 0;
+    let performedSetsTotal = 0;
+    let performedRepsTotal = 0;
+    let volumeTotal = 0;
+
+    let estimatedDurationTotal = 0;
+    let estimatedDurationCount = 0;
+    let elapsedMinutesApproxTotal = 0;
+    let elapsedMinutesApproxCount = 0;
+
+    let pointsTotal = 0;
+
+    for (const history of histories) {
+      const template = history.WorkoutTemplate || null;
+      const restDay = Boolean(template?.isRestDay);
+      const finished = Boolean(history.completed);
+
+      if (restDay) restDaySessionsTotal += 1;
+      else workoutSessionsTotal += 1;
+
+      if (finished) {
+        sessionsFinished += 1;
+        if (restDay) restDaySessionsFinished += 1;
+        else workoutSessionsFinished += 1;
+      }
+
+      const rows = progressByHistoryId.get(history.id) || [];
+
+      const dayExercisesTotal = rows.length;
+      const dayExercisesCompleted = rows.filter((r) => Boolean(r.completed)).length;
+
+      let dayPerformedSets = 0;
+      let dayPerformedReps = 0;
+      let dayVolume = 0;
+
+      for (const row of rows) {
+        const performedSets = normalizePerformedSets(row.performedSets);
+        dayPerformedSets += performedSets.length;
+
+        for (const set of performedSets) {
+          const reps = Number(set?.reps);
+          if (Number.isFinite(reps) && reps >= 0) {
+            dayPerformedReps += reps;
+            const weightRaw = set?.weight;
+            const weight =
+              weightRaw === undefined || weightRaw === null || weightRaw === ""
+                ? null
+                : Number(weightRaw);
+            if (Number.isFinite(weight)) {
+              dayVolume += reps * weight;
+            }
+          }
+        }
+      }
+
+      exercisesTotal += dayExercisesTotal;
+      exercisesCompleted += dayExercisesCompleted;
+      performedSetsTotal += dayPerformedSets;
+      performedRepsTotal += dayPerformedReps;
+      volumeTotal += dayVolume;
+
+      if (finished) {
+        const estimated = Number(template?.estimatedDurationMinutes);
+        if (Number.isFinite(estimated)) {
+          estimatedDurationTotal += estimated;
+          estimatedDurationCount += 1;
+        }
+
+        const startedAt = history.createdAt ? new Date(history.createdAt) : null;
+        const finishedAt = history.updatedAt ? new Date(history.updatedAt) : null;
+        if (startedAt && finishedAt) {
+          const diffMs = finishedAt.getTime() - startedAt.getTime();
+          const minutes = diffMs > 0 ? diffMs / 60000 : 0;
+          if (Number.isFinite(minutes)) {
+            elapsedMinutesApproxTotal += minutes;
+            elapsedMinutesApproxCount += 1;
+          }
+        }
+      }
+
+      const completionRate =
+        dayExercisesTotal > 0 ? dayExercisesCompleted / dayExercisesTotal : restDay ? 1 : 0;
+
+      const muscleMap = new Map(); // muscleId -> { id, name, primaryExercises, secondaryExercises }
+      for (const row of rows) {
+        const muscles = musclesByExerciseId.get(row.exerciseId) || [];
+        for (const muscle of muscles) {
+          const entry = muscleMap.get(muscle.id) || {
+            id: muscle.id,
+            name: muscle.name,
+            primaryExercises: 0,
+            secondaryExercises: 0,
+          };
+          if (muscle.role === "primary") entry.primaryExercises += 1;
+          else entry.secondaryExercises += 1;
+          muscleMap.set(muscle.id, entry);
+
+          const overall = overallMuscleMap.get(muscle.id) || {
+            id: muscle.id,
+            name: muscle.name,
+            primaryExercises: 0,
+            secondaryExercises: 0,
+            days: new Set(),
+          };
+          if (muscle.role === "primary") overall.primaryExercises += 1;
+          else overall.secondaryExercises += 1;
+          overall.days.add(history.dateAssigned);
+          overallMuscleMap.set(muscle.id, overall);
+        }
+      }
+
+      const muscles = Array.from(muscleMap.values())
+        .map((m) => ({
+          ...m,
+          score: m.primaryExercises * 2 + m.secondaryExercises,
+        }))
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+
+      const points = pointsForSession({
+        finished,
+        restDay,
+        exercisesCompleted: dayExercisesCompleted,
+        performedSetsCount: dayPerformedSets,
+      });
+      pointsTotal += points;
+
+      byDay.push({
+        date: history.dateAssigned,
+        workoutHistoryId: history.id,
+        finished,
+        restDay,
+        template: template
+          ? {
+              id: template.id,
+              name: template.name,
+              split: template.split,
+              category: template.category,
+              fitnessLevel: template.fitnessLevel,
+              location: template.location,
+              estimatedDurationMinutes: template.estimatedDurationMinutes,
+            }
+          : null,
+        metrics: {
+          exercisesTotal: dayExercisesTotal,
+          exercisesCompleted: dayExercisesCompleted,
+          completionRate,
+          performedSets: dayPerformedSets,
+          performedReps: dayPerformedReps,
+          volume: dayVolume,
+          estimatedDurationMinutes: Number.isFinite(Number(template?.estimatedDurationMinutes))
+            ? Number(template.estimatedDurationMinutes)
+            : null,
+          elapsedMinutesApprox:
+            finished && history.createdAt && history.updatedAt
+              ? Math.max(
+                  0,
+                  Math.round(
+                    (new Date(history.updatedAt).getTime() -
+                      new Date(history.createdAt).getTime()) /
+                      60000,
+                  ),
+                )
+              : null,
+        },
+        performance: restDay ? { label: "rest" } : { label: workoutPerformanceLabel(completionRate) },
+        muscles,
+        points,
+      });
+    }
+
+    const topMuscles = Array.from(overallMuscleMap.values())
+      .map((m) => ({
+        id: m.id,
+        name: m.name,
+        primaryExercises: m.primaryExercises,
+        secondaryExercises: m.secondaryExercises,
+        score: m.primaryExercises * 2 + m.secondaryExercises,
+        daysWorked: m.days.size,
+      }))
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+      .slice(0, topMusclesLimit);
+
+    const averageOrNull = (total, count, decimals = 1) => {
+      if (!count) return null;
+      const value = total / count;
+      const factor = 10 ** decimals;
+      return Math.round(value * factor) / factor;
+    };
+
+    const levelFromPoints = (points) => Math.floor(Math.max(0, points) / 500) + 1;
+    const nextLevelAt = (level) => level * 500;
+
+    const rangeLevel = levelFromPoints(pointsTotal);
+
+    const within = (date, start, end) => date >= start && date <= end;
+    const summarizeWindow = (windowStart, windowEnd) => {
+      const items = byDay.filter(
+        (d) => within(d.date, windowStart, windowEnd) && d.finished && !d.restDay,
+      );
+      const sessions = items.length;
+      const volume = items.reduce((sum, d) => sum + (Number(d.metrics?.volume) || 0), 0);
+      const completionRate = averageOrNull(
+        items.reduce((sum, d) => sum + (Number(d.metrics?.completionRate) || 0), 0),
+        items.length,
+        3,
+      );
+      return { sessions, volume, avgCompletionRate: completionRate };
+    };
+
+    const rolling7Start = shiftDateOnly(endDate, -6);
+    const previous7Start = shiftDateOnly(endDate, -13);
+    const previous7End = shiftDateOnly(endDate, -7);
+
+    const rolling7 =
+      rolling7Start ? summarizeWindow(rolling7Start, endDate) : { sessions: 0, volume: 0, avgCompletionRate: null };
+    const previous7 =
+      previous7Start && previous7End
+        ? summarizeWindow(previous7Start, previous7End)
+        : { sessions: 0, volume: 0, avgCompletionRate: null };
+
+    const [allTimeSessionsTotal, allTimeSessionsFinished, allTimeWorkoutsFinished, allTimeRestDaysFinished] =
+      await Promise.all([
+        WorkoutHistory.count({ where: { userId: user.id } }),
+        WorkoutHistory.count({ where: { userId: user.id, completed: true } }),
+        WorkoutHistory.count({
+          where: { userId: user.id, completed: true },
+          include: [{ model: WorkoutTemplate, required: true, where: { isRestDay: false } }],
+        }),
+        WorkoutHistory.count({
+          where: { userId: user.id, completed: true },
+          include: [{ model: WorkoutTemplate, required: true, where: { isRestDay: true } }],
+        }),
+      ]);
+
+    const allTimePoints = allTimeWorkoutsFinished * 100 + allTimeRestDaysFinished * 25;
+    const allTimeLevel = levelFromPoints(allTimePoints);
+
+    return {
+      range: { startDate, endDate, days },
+      summary: {
+        sessionsTotal,
+        sessionsFinished,
+        workoutSessionsTotal,
+        workoutSessionsFinished,
+        restDaySessionsTotal,
+        restDaySessionsFinished,
+        exercisesTotal,
+        exercisesCompleted,
+        exerciseCompletionRate: exercisesTotal ? exercisesCompleted / exercisesTotal : 0,
+        performedSetsTotal,
+        performedRepsTotal,
+        volumeTotal,
+        avgEstimatedDurationMinutes: averageOrNull(
+          estimatedDurationTotal,
+          estimatedDurationCount,
+          1,
+        ),
+        avgElapsedMinutesApprox: averageOrNull(
+          elapsedMinutesApproxTotal,
+          elapsedMinutesApproxCount,
+          1,
+        ),
+      },
+      gamification: {
+        points: pointsTotal,
+        level: rangeLevel,
+        nextLevelAt: nextLevelAt(rangeLevel),
+        progressToNextLevel: nextLevelAt(rangeLevel) - pointsTotal,
+      },
+      allTime: {
+        sessionsTotal: Number(allTimeSessionsTotal) || 0,
+        sessionsFinished: Number(allTimeSessionsFinished) || 0,
+        workoutsFinished: Number(allTimeWorkoutsFinished) || 0,
+        restDaysFinished: Number(allTimeRestDaysFinished) || 0,
+        points: allTimePoints,
+        level: allTimeLevel,
+        nextLevelAt: nextLevelAt(allTimeLevel),
+        progressToNextLevel: nextLevelAt(allTimeLevel) - allTimePoints,
+      },
+      trends: {
+        rolling7,
+        previous7,
+        delta: {
+          sessions: rolling7.sessions - previous7.sessions,
+          volume: rolling7.volume - previous7.volume,
+        },
+      },
+      topMuscles,
+      byDay,
     };
   }
 
@@ -522,7 +1169,7 @@ class WorkoutService {
 
     await this._ensureHistoryExercisesFromTemplate(
       history.id,
-      history.workoutTemplateId
+      history.workoutTemplateId,
     );
 
     const progressRows = await WorkoutHistoryExercise.findAll({
@@ -535,6 +1182,18 @@ class WorkoutService {
           include: [
             { model: Gallery, required: false },
             { model: Instruction, required: false },
+            {
+              model: Muscle,
+              as: "primaryMuscles",
+              through: { attributes: [] },
+              required: false,
+            },
+            {
+              model: Muscle,
+              as: "secondaryMuscles",
+              through: { attributes: [] },
+              required: false,
+            },
           ],
         },
       ],
@@ -547,12 +1206,12 @@ class WorkoutService {
   }
 
   /**
-   * Marks a workout history as completed if all exercises are completed.
+   * Marks a workout history as completed (validated), even if not all exercises are completed.
    *
    * Returns `{ status }`:
    * - `ok`: completed successfully
    * - `already_done`: already completed
-   * - `bad_request`: invalid id or workout not completed
+   * - `bad_request`: invalid id
    * - `not_found`: history not found for user
    */
   async finishWorkoutHistoryForUser(user, workoutHistoryId) {
@@ -571,13 +1230,8 @@ class WorkoutService {
 
     await this._ensureHistoryExercisesFromTemplate(
       id,
-      history.workoutTemplateId
+      history.workoutTemplateId,
     );
-    const stats = await this._getWorkoutHistoryExerciseCompletion(id);
-
-    if (!stats.allCompleted && !history.WorkoutTemplate?.isRestDay) {
-      return { status: "bad_request", message: "workout_not_completed" };
-    }
 
     await history.update({ completed: true });
     return { status: "ok", data: history.toJSON() };
@@ -587,7 +1241,7 @@ class WorkoutService {
     user,
     workoutHistoryId,
     exerciseId,
-    patch
+    patch,
   ) {
     const history = await WorkoutHistory.findOne({
       where: { id: workoutHistoryId, userId: user.id },
@@ -597,7 +1251,7 @@ class WorkoutService {
 
     await this._ensureHistoryExercisesFromTemplate(
       workoutHistoryId,
-      history.workoutTemplateId
+      history.workoutTemplateId,
     );
 
     const row = await WorkoutHistoryExercise.findOne({
@@ -633,12 +1287,32 @@ class WorkoutService {
    */
   async saveExercisesToDatabase() {
     let errorCount = 0;
+    const muscleCache = new Map();
+    const normalizeMuscleName = (value) => {
+      if (typeof value !== "string") return "";
+      const trimmed = value.trim();
+      return trimmed ? trimmed.toLowerCase() : "";
+    };
+
+    const ensureMuscle = async (name) => {
+      const normalized = normalizeMuscleName(name);
+      if (!normalized) return null;
+      if (muscleCache.has(normalized)) return muscleCache.get(normalized);
+
+      const [muscle] = await Muscle.findOrCreate({
+        where: { name: normalized },
+        defaults: { name: normalized },
+      });
+      muscleCache.set(normalized, muscle);
+      return muscle;
+    };
+
     const exercisesDir = path.join(
       __dirname,
       "..",
       "..",
       "public",
-      "exercises"
+      "exercises",
     );
     const exerciseFolders = fs.readdirSync(exercisesDir).filter((folder) => {
       return fs.statSync(path.join(exercisesDir, folder)).isDirectory();
@@ -651,7 +1325,7 @@ class WorkoutService {
 
       if (fs.existsSync(exerciseJsonPath) && fs.existsSync(imagesFolderPath)) {
         const exerciseData = JSON.parse(
-          fs.readFileSync(exerciseJsonPath, "utf-8")
+          fs.readFileSync(exerciseJsonPath, "utf-8"),
         );
 
         // Get the image files from the images folder (assuming only two images)
@@ -661,7 +1335,7 @@ class WorkoutService {
 
         // Prepare the image URLs (served from `/public/exercises/...` if you expose `public` statically)
         const imageUrls = imageFiles.map(
-          (imageFile) => `/exercises/${folder}/images/${imageFile}`
+          (imageFile) => `/exercises/${folder}/images/${imageFile}`,
         );
 
         // Prepare the data for saving
@@ -671,8 +1345,6 @@ class WorkoutService {
           level: exerciseData.level,
           mechanic: exerciseData.mechanic,
           equipment: exerciseData.equipment,
-          primaryMuscles: exerciseData.primaryMuscles,
-          secondaryMuscles: exerciseData.secondaryMuscles,
           category: exerciseData.category,
         };
 
@@ -692,8 +1364,58 @@ class WorkoutService {
             // Exercise exists, keep it up-to-date (idempotent seed)
             savedExercise = await existingExercise.update(exercise);
             console.log(
-              `Exercise "${exerciseData.name}" updated successfully.`
+              `Exercise "${exerciseData.name}" updated successfully.`,
             );
+          }
+
+          const primaryMuscleNames = Array.isArray(exerciseData.primaryMuscles)
+            ? exerciseData.primaryMuscles
+                .map(normalizeMuscleName)
+                .filter(Boolean)
+            : [];
+          const secondaryMuscleNames = Array.isArray(
+            exerciseData.secondaryMuscles,
+          )
+            ? exerciseData.secondaryMuscles
+                .map(normalizeMuscleName)
+                .filter(Boolean)
+            : [];
+          const primaryMuscleSet = new Set(primaryMuscleNames);
+          const uniqueSecondaryMuscleNames = [
+            ...new Set(
+              secondaryMuscleNames.filter(
+                (name) => !primaryMuscleSet.has(name),
+              ),
+            ),
+          ];
+
+          const muscleRows = [];
+          for (const name of primaryMuscleNames) {
+            const muscle = await ensureMuscle(name);
+            if (!muscle) continue;
+            muscleRows.push({
+              exerciseId: savedExercise.id,
+              muscleId: muscle.id,
+              role: "primary",
+            });
+          }
+          for (const name of uniqueSecondaryMuscleNames) {
+            const muscle = await ensureMuscle(name);
+            if (!muscle) continue;
+            muscleRows.push({
+              exerciseId: savedExercise.id,
+              muscleId: muscle.id,
+              role: "secondary",
+            });
+          }
+
+          await ExerciseMuscle.destroy({
+            where: { exerciseId: savedExercise.id },
+          });
+          if (muscleRows.length) {
+            await ExerciseMuscle.bulkCreate(muscleRows, {
+              ignoreDuplicates: true,
+            });
           }
 
           const instructionTexts = Array.isArray(exerciseData.instructions)
@@ -710,7 +1432,7 @@ class WorkoutService {
               instructionTexts.map((text) => ({
                 text,
                 ExerciseId: savedExercise.id,
-              }))
+              })),
             );
           }
 
@@ -741,7 +1463,7 @@ class WorkoutService {
 
     if (errorCount > 0) {
       throw new Error(
-        `saveExercisesToDatabase completed with ${errorCount} error(s).`
+        `saveExercisesToDatabase completed with ${errorCount} error(s).`,
       );
     }
   }

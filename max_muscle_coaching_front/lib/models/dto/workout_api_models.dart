@@ -4,6 +4,7 @@ export 'workout/finish_workout_response.dart';
 export 'workout/recommended_workouts_response.dart';
 export 'workout/today_workout_response.dart';
 export 'workout/update_exercise_progress_response.dart';
+export 'workout/workout_stats_response.dart';
 export 'workout/workout_exercise.dart';
 export 'workout/workout_exercise_info.dart';
 export 'workout/workout_history.dart';

@@ -67,7 +67,7 @@ exports.signIn = async (req, res) => {
       formattedPhoneNumber,
       googleId,
       facebookId,
-      appleId
+      appleId,
     );
     if (!user) {
       return res.status(404).json({ message: "client_not_found" });
@@ -187,7 +187,7 @@ exports.signUp = async (req, res) => {
       formattedPhoneNumber,
       googleId,
       facebookId,
-      appleId
+      appleId,
     );
     if (user) {
       return res.status(404).json({ message: "client_already_found" });
@@ -1135,7 +1135,7 @@ const checkUserExists = async (
   phoneNumber,
   googleId,
   facebookId,
-  appleId
+  appleId,
 ) => {
   try {
     let whereClause = {};

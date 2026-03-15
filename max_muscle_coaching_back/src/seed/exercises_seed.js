@@ -11,6 +11,8 @@ dotenv.config();
 
 const { sequelize } = require("../config/db.config");
 const Exercise = require("../models/exercise_model");
+const Muscle = require("../models/muscle_model");
+const ExerciseMuscle = require("../models/exercise_muscle_model");
 const Gallery = require("../models/gallery_model");
 const Instruction = require("../models/instruction_model");
 const WorkoutService = require("../services/workout_service");
@@ -19,6 +21,8 @@ async function run() {
   await sequelize.authenticate();
   // Ensure schema matches current Exercise model (notably: allow NULL for optional fields)
   await Exercise.sync({ alter: true });
+  await Muscle.sync({ alter: true });
+  await ExerciseMuscle.sync({ alter: true });
   await Gallery.sync({ alter: true });
   await Instruction.sync({ alter: true });
 

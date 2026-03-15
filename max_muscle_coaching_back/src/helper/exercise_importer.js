@@ -16,6 +16,7 @@ const { sequelize } = require("../config/db.config");
 
 const Exercise = require("../models/exercise_model");
 const Muscle = require("../models/muscle_model");
+const ExerciseMuscle = require("../models/exercise_muscle_model");
 const Instruction = require("../models/instruction_model");
 const Gallery = require("../models/gallery_model");
 
@@ -109,11 +110,15 @@ async function importExerciseFromFolder({
     ? payload.secondaryMuscles
     : [];
 
-  const muscleNames = [
+  const primaryMuscleNames = [
+    ...new Set(primaryMuscles.map(normalizeMuscleName).filter(Boolean)),
+  ];
+  const primaryMuscleSet = new Set(primaryMuscleNames);
+  const secondaryMuscleNames = [
     ...new Set(
-      [...primaryMuscles, ...secondaryMuscles]
+      secondaryMuscles
         .map(normalizeMuscleName)
-        .filter(Boolean)
+        .filter((name) => name && !primaryMuscleSet.has(name))
     ),
   ];
 
@@ -147,16 +152,46 @@ async function importExerciseFromFolder({
       ? await existingExercise.update(exerciseData, { transaction })
       : await Exercise.create(exerciseData, { transaction });
 
-    const muscles = [];
-    for (const muscleName of muscleNames) {
+    const muscleByName = new Map();
+    const uniqueNames = [...new Set([...primaryMuscleNames, ...secondaryMuscleNames])];
+    for (const muscleName of uniqueNames) {
       const [muscle] = await Muscle.findOrCreate({
         where: { name: muscleName },
         defaults: { name: muscleName },
         transaction,
       });
-      muscles.push(muscle);
+      muscleByName.set(muscleName, muscle);
     }
-    await exercise.setMuscles(muscles, { transaction });
+
+    await ExerciseMuscle.destroy({
+      where: { exerciseId: exercise.id },
+      transaction,
+    });
+    const muscleRows = [];
+    for (const muscleName of primaryMuscleNames) {
+      const muscle = muscleByName.get(muscleName);
+      if (!muscle) continue;
+      muscleRows.push({
+        exerciseId: exercise.id,
+        muscleId: muscle.id,
+        role: "primary",
+      });
+    }
+    for (const muscleName of secondaryMuscleNames) {
+      const muscle = muscleByName.get(muscleName);
+      if (!muscle) continue;
+      muscleRows.push({
+        exerciseId: exercise.id,
+        muscleId: muscle.id,
+        role: "secondary",
+      });
+    }
+    if (muscleRows.length) {
+      await ExerciseMuscle.bulkCreate(muscleRows, {
+        transaction,
+        ignoreDuplicates: true,
+      });
+    }
 
     await Instruction.destroy({
       where: { ExerciseId: exercise.id },

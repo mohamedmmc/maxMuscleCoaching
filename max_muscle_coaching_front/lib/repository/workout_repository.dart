@@ -11,7 +11,10 @@ import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
 class WorkoutRepository extends GetxService {
   static WorkoutRepository get find => Get.find<WorkoutRepository>();
 
-  Future<FinishWorkoutResponse?> finishWorkoutHistory({required int workoutHistoryId}) async {
+  String _dateIso(DateTime date) => date.toIso8601String().substring(0, 10);
+
+  Future<FinishWorkoutResponse?> finishWorkoutHistory(
+      {required int workoutHistoryId}) async {
     try {
       final result = await ApiBaseHelper().request(
         RequestType.post,
@@ -19,7 +22,8 @@ class WorkoutRepository extends GetxService {
         sendToken: true,
         body: const <String, dynamic>{},
       );
-      if (result is Map) return FinishWorkoutResponse.fromJson(result.cast<String, dynamic>());
+      if (result is Map)
+        return FinishWorkoutResponse.fromJson(result.cast<String, dynamic>());
       return null;
     } on BadRequestException catch (e) {
       return FinishWorkoutResponse(
@@ -34,7 +38,8 @@ class WorkoutRepository extends GetxService {
         message: 'not_found',
       );
     } on UnauthorisedException {
-      SnackbarService.showError(title: 'Session expired', message: 'Please login again.');
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
       await AppController.find.logout();
       return null;
     } catch (e) {
@@ -43,15 +48,51 @@ class WorkoutRepository extends GetxService {
     }
   }
 
+  Future<WorkoutStatsResponse?> getWorkoutStats({
+    DateTime? from,
+    DateTime? to,
+    int? days,
+    int topMusclesLimit = 10,
+  }) async {
+    try {
+      final query = <String, String>{
+        if (from != null) 'from': _dateIso(from),
+        if (to != null) 'to': _dateIso(to),
+        if (days != null) 'days': '$days',
+        if (topMusclesLimit > 0) 'topMusclesLimit': '$topMusclesLimit',
+      };
+
+      final queryString =
+          query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
+      final result = await ApiBaseHelper().request(
+          RequestType.get, '/workouts/stats$queryString',
+          sendToken: true);
+      if (result is Map)
+        return WorkoutStatsResponse.fromJson(result.cast<String, dynamic>());
+      return null;
+    } on UnauthorisedException {
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
+      await AppController.find.logout();
+      return null;
+    } catch (e) {
+      LoggerService.logger?.e('Error occured in getWorkoutStats:\n$e');
+      return null;
+    }
+  }
+
   Future<TodayWorkoutResponse?> getTodayWorkout() async {
     try {
-      final result = await ApiBaseHelper().request(RequestType.get, '/workouts/today', sendToken: true);
-      if (result is Map) return TodayWorkoutResponse.fromJson(result.cast<String, dynamic>());
+      final result = await ApiBaseHelper()
+          .request(RequestType.get, '/workouts/today', sendToken: true);
+      if (result is Map)
+        return TodayWorkoutResponse.fromJson(result.cast<String, dynamic>());
       return null;
     } on BadRequestException catch (e) {
       final msg = e.message?.toString().trim();
       if (msg == 'work_already_done') {
-        return const TodayWorkoutResponse(restDay: false, message: 'work_already_done');
+        return const TodayWorkoutResponse(
+            restDay: false, message: 'work_already_done');
       }
       LoggerService.logger?.e('Bad request in getTodayWorkout:\n$e');
       return null;
@@ -64,7 +105,8 @@ class WorkoutRepository extends GetxService {
         } else {
           try {
             final decoded = jsonDecode(body);
-            if (decoded is Map && decoded['message'] != null) msg = decoded['message']?.toString().trim();
+            if (decoded is Map && decoded['message'] != null)
+              msg = decoded['message']?.toString().trim();
           } catch (_) {
             msg = null;
           }
@@ -72,12 +114,14 @@ class WorkoutRepository extends GetxService {
       }
 
       if (msg == 'work_already_done') {
-        return const TodayWorkoutResponse(restDay: false, message: 'work_already_done');
+        return const TodayWorkoutResponse(
+            restDay: false, message: 'work_already_done');
       }
       LoggerService.logger?.e('Conflict in getTodayWorkout:\n$e');
       return null;
     } on UnauthorisedException {
-      SnackbarService.showError(title: 'Session expired', message: 'Please login again.');
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
       await AppController.find.logout();
       return null;
     } catch (e) {
@@ -88,11 +132,15 @@ class WorkoutRepository extends GetxService {
 
   Future<RecommendedWorkoutsResponse?> getRecommendedWorkouts() async {
     try {
-      final result = await ApiBaseHelper().request(RequestType.get, '/workouts/recommended', sendToken: true);
-      if (result is Map) return RecommendedWorkoutsResponse.fromJson(result.cast<String, dynamic>());
+      final result = await ApiBaseHelper()
+          .request(RequestType.get, '/workouts/recommended', sendToken: true);
+      if (result is Map)
+        return RecommendedWorkoutsResponse.fromJson(
+            result.cast<String, dynamic>());
       return null;
     } on UnauthorisedException {
-      SnackbarService.showError(title: 'Session expired', message: 'Please login again.');
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
       await AppController.find.logout();
       return null;
     } catch (e) {
@@ -101,13 +149,19 @@ class WorkoutRepository extends GetxService {
     }
   }
 
-  Future<WorkoutHistoryListResponse?> getWorkoutHistory({int limit = 20, int offset = 0}) async {
+  Future<WorkoutHistoryListResponse?> getWorkoutHistory(
+      {int limit = 20, int offset = 0}) async {
     try {
-      final result = await ApiBaseHelper().request(RequestType.get, '/workouts/history?limit=$limit&offset=$offset', sendToken: true);
-      if (result is Map) return WorkoutHistoryListResponse.fromJson(result.cast<String, dynamic>());
+      final result = await ApiBaseHelper().request(
+          RequestType.get, '/workouts/history?limit=$limit&offset=$offset',
+          sendToken: true);
+      if (result is Map)
+        return WorkoutHistoryListResponse.fromJson(
+            result.cast<String, dynamic>());
       return null;
     } on UnauthorisedException {
-      SnackbarService.showError(title: 'Session expired', message: 'Please login again.');
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
       await AppController.find.logout();
       return null;
     } catch (e) {
@@ -116,13 +170,18 @@ class WorkoutRepository extends GetxService {
     }
   }
 
-  Future<WorkoutHistory?> getWorkoutHistoryDetail({required int workoutHistoryId}) async {
+  Future<WorkoutHistory?> getWorkoutHistoryDetail(
+      {required int workoutHistoryId}) async {
     try {
-      final result = await ApiBaseHelper().request(RequestType.get, '/workouts/history/$workoutHistoryId', sendToken: true);
-      if (result is Map) return WorkoutHistory.fromJson(result.cast<String, dynamic>());
+      final result = await ApiBaseHelper().request(
+          RequestType.get, '/workouts/history/$workoutHistoryId',
+          sendToken: true);
+      if (result is Map)
+        return WorkoutHistory.fromJson(result.cast<String, dynamic>());
       return null;
     } on UnauthorisedException {
-      SnackbarService.showError(title: 'Session expired', message: 'Please login again.');
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
       await AppController.find.logout();
       return null;
     } catch (e) {
@@ -139,7 +198,8 @@ class WorkoutRepository extends GetxService {
   }) async {
     try {
       final body = <String, dynamic>{
-        'performedSets': performedSets.map((s) => s.toJson()).toList(growable: false),
+        'performedSets':
+            performedSets.map((s) => s.toJson()).toList(growable: false),
         if (completed != null) 'completed': completed,
       };
 
@@ -150,11 +210,14 @@ class WorkoutRepository extends GetxService {
         body: body,
       );
 
-      if (result is Map) return UpdateExerciseProgressResponse.fromJson(result.cast<String, dynamic>());
+      if (result is Map)
+        return UpdateExerciseProgressResponse.fromJson(
+            result.cast<String, dynamic>());
       if (result is int) return const UpdateExerciseProgressResponse();
       return null;
     } on UnauthorisedException {
-      SnackbarService.showError(title: 'Session expired', message: 'Please login again.');
+      SnackbarService.showError(
+          title: 'Session expired', message: 'Please login again.');
       await AppController.find.logout();
       return null;
     } catch (e) {

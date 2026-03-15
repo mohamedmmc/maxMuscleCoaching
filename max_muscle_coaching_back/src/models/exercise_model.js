@@ -6,7 +6,7 @@
  * Associations:
  * - Exercise <-> WorkoutTemplate (many-to-many) via `WorkoutTemplateExercise`
  * - Exercise -> Gallery (one-to-many)
- * - Exercise <-> Muscle (many-to-many) via `ExerciseMuscles` (declared in `muscle_model.js`)
+ * - Exercise <-> Muscle (many-to-many) via `ExerciseMuscle` with `role` (primary/secondary)
  */
 const { sequelize, Sequelize } = require("../config/db.config");
 
@@ -42,6 +42,8 @@ Exercise.associate = () => {
   const WorkoutTemplate = require("./workout_template_model");
   const WorkoutTemplateExercise = require("./workout_template_exercise_model");
   const Gallery = require("./gallery_model");
+  const Muscle = require("./muscle_model");
+  const ExerciseMuscle = require("./exercise_muscle_model");
 
   Exercise.belongsToMany(WorkoutTemplate, {
     through: WorkoutTemplateExercise,
@@ -49,6 +51,20 @@ Exercise.associate = () => {
   });
 
   Exercise.hasMany(Gallery, { foreignKey: "exerciseId" });
+
+  Exercise.belongsToMany(Muscle, {
+    as: "primaryMuscles",
+    through: { model: ExerciseMuscle, scope: { role: "primary" } },
+    foreignKey: "exerciseId",
+    otherKey: "muscleId",
+  });
+
+  Exercise.belongsToMany(Muscle, {
+    as: "secondaryMuscles",
+    through: { model: ExerciseMuscle, scope: { role: "secondary" } },
+    foreignKey: "exerciseId",
+    otherKey: "muscleId",
+  });
 };
 
 module.exports = Exercise;

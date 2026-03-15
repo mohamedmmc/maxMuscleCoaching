@@ -73,6 +73,23 @@ Returns recommended workout templates based on user preferences.
 - Auth: `Authorization: Bearer <jwt>`
 - Success: `200 { "userId": number, "templates": WorkoutTemplate[] }`
 
+### `GET /workouts/stats`
+
+Returns workout statistics for the authenticated user (gamification-friendly).
+
+- Auth: `Authorization: Bearer <jwt>`
+- Query (optional):
+  - `from`: `YYYY-MM-DD`
+  - `to`: `YYYY-MM-DD`
+  - `days`: number (default 30, max 365) — used when `from` is not provided
+  - `topMusclesLimit`: number (default 10, max 50)
+- Success: `200`
+  - `{ "userId": number, "range": {...}, "summary": {...}, "gamification": {...}, "allTime": {...}, "trends": {...}, "topMuscles": [...], "byDay": [...] }`
+- Errors:
+  - `400 { "message": "invalid_from" }`
+  - `400 { "message": "invalid_to" }`
+  - `400 { "message": "invalid_date_range" }`
+
 ### `GET /workouts/today`
 
 Returns (or creates) the user’s workout session for today.
@@ -83,6 +100,7 @@ Returns (or creates) the user’s workout session for today.
   - Otherwise: `200 { "dateAssigned": "YYYY-MM-DD", "restDay": boolean, "workoutHistoryId": number|null, "template": WorkoutTemplate|null, "exerciseProgress": WorkoutHistoryExercise[] }`
 - Notes:
   - `template.Exercises` contains exercise details + `WorkoutTemplateExercise` (sets/reps/order/rest/notes).
+  - Each exercise includes `primaryMuscles` and `secondaryMuscles` arrays (Muscle objects with `id` + `name`).
   - `exerciseProgress` contains only progress rows (no nested `Exercise` object). Use `template.Exercises` to render exercise info.
 
 ### `GET /workouts/history`
@@ -100,6 +118,7 @@ Returns a single history with detailed `exerciseProgress`.
 - Auth: `Authorization: Bearer <jwt>`
 - Params: `workoutHistoryId` (number)
 - Success: `200 { "userId": number, ...WorkoutHistory, "exerciseProgress": WorkoutHistoryExerciseWithExercise[] }`
+  - Each `exerciseProgress[].Exercise` includes `primaryMuscles` and `secondaryMuscles` arrays (Muscle objects with `id` + `name`).
 - Errors:
   - `400 { "message": "invalid_workoutHistoryId" }`
   - `404 { "message": "not_found" }`
@@ -118,11 +137,12 @@ Updates progress for one exercise in a workout session.
   - `400 { "message": "invalid_performedSets" }`
   - `404 { "message": "not_found" }`
 
-When `completed` is updated, the server automatically recalculates and persists `WorkoutHistory.completed`.
+When `completed` is updated, the server can auto-complete `WorkoutHistory.completed` once all exercises are completed.
+Note: once a workout history is marked completed (either by auto-complete or by the finish endpoint), it is not unset back to `false` if exercise completion is later edited.
 
 ### `POST /workouts/history/:workoutHistoryId/finish`
 
-Marks a workout session as finished (completed) if all exercises are completed.
+Marks a workout session as finished (validated), even if not all exercises are completed.
 
 - Auth: `Authorization: Bearer <jwt>`
 - Params: `workoutHistoryId` (number)
@@ -131,6 +151,4 @@ Marks a workout session as finished (completed) if all exercises are completed.
   - `200 { "message": "work_already_done" }` (already finished)
 - Errors:
   - `400 { "message": "invalid_workoutHistoryId" }`
-  - `400 { "message": "workout_not_completed" }` (not all exercises completed)
   - `404 { "message": "not_found" }`
-

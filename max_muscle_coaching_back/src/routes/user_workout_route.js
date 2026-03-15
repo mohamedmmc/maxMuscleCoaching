@@ -3,6 +3,7 @@
  *
  * Endpoints (all require `Authorization: Bearer <jwt>`):
  * - GET  `/workouts/recommended`
+ * - GET  `/workouts/stats`
  * - GET  `/workouts/today`
  * - GET  `/workouts/history`
  * - GET  `/workouts/history/:workoutHistoryId`
@@ -18,6 +19,8 @@ module.exports = (app) => {
 
   // GET /workouts/recommended
   router.get("/recommended", tokenVerification, controller.recommended);
+  // GET /workouts/stats
+  router.get("/stats", tokenVerification, controller.stats);
   // GET /workouts/today
   router.get("/today", tokenVerification, controller.today);
   // GET /workouts/history

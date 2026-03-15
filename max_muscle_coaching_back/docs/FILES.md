@@ -40,6 +40,7 @@ This document is a quick “what lives where” map for the repo.
 - `src/models/gallery_model.js`: `Gallery` (exercise media).
 - `src/models/instruction_model.js`: `Instruction` (exercise instructions).
 - `src/models/muscle_model.js`: `Muscle` catalog.
+- `src/models/exercise_muscle_model.js`: Join table between exercises and muscles (primary/secondary).
 - `src/models/workout_template_model.js`: `WorkoutTemplate` (template metadata + association to exercises).
 - `src/models/workout_template_exercise_model.js`: Join table for template exercises (order/sets/reps/rest/notes).
 - `src/models/workout_history_model.js`: `WorkoutHistory` (one per user per day).
@@ -67,4 +68,3 @@ This document is a quick “what lives where” map for the repo.
 ## Public Assets
 
 - `public/exercises/**`: Exercise JSON + images served by `app.js`.
-

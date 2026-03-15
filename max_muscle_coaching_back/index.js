@@ -24,6 +24,8 @@ async function startServer() {
   // IMPORTANT: models must be imported/registered before calling `sequelize.sync()`
   const User = require("./src/models/user_model");
   const Exercise = require("./src/models/exercise_model");
+  const Muscle = require("./src/models/muscle_model");
+  const ExerciseMuscle = require("./src/models/exercise_muscle_model");
 
   require("./src/models/instruction_model");
   require("./src/models/gallery_model");
@@ -35,6 +37,8 @@ async function startServer() {
   // Set up all model associations after models are loaded
   if (User.associate) User.associate();
   if (Exercise.associate) Exercise.associate();
+  if (Muscle.associate) Muscle.associate();
+  if (ExerciseMuscle.associate) ExerciseMuscle.associate();
   if (WorkoutTemplate.associate) WorkoutTemplate.associate();
   if (WorkoutTemplateExercise.associate) WorkoutTemplateExercise.associate();
   if (WorkoutHistory.associate) WorkoutHistory.associate();

@@ -5,7 +5,8 @@
   "scripts": {
     "start": "nodemon index.js",
     "seed:exercises": "node src/seed/exercises_seed.js",
-    "seed:templates": "node src/seed/workout_templates_seed.js"
+    "seed:templates": "node src/seed/workout_templates_seed.js",
+    "seed:mockhistory": "node src/seed/mock_workout_history_seed.js"
   },
   "dependencies": {
     "async": "^3.2.4",

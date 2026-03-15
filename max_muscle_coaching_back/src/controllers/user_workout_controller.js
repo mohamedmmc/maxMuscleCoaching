@@ -29,6 +29,60 @@ exports.recommended = async (req, res) => {
 };
 
 /**
+ * GET /workouts/stats
+ *
+ * Returns workout statistics for the authenticated user.
+ *
+ * Query params (optional):
+ * - `from`: YYYY-MM-DD
+ * - `to`: YYYY-MM-DD
+ * - `days`: number (default 30)
+ * - `topMusclesLimit`: number (default 10)
+ */
+exports.stats = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.decoded.id);
+    if (!user) return res.status(401).json({ message: "invalid_token" });
+
+    const isDateOnly = (value) =>
+      typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+    const from = req.query?.from;
+    const to = req.query?.to;
+    if (from && !isDateOnly(from))
+      return res.status(400).json({ message: "invalid_from" });
+    if (to && !isDateOnly(to))
+      return res.status(400).json({ message: "invalid_to" });
+    if (from && to && from > to)
+      return res.status(400).json({ message: "invalid_date_range" });
+
+    const daysRaw = Number(req.query?.days);
+    const days =
+      Number.isFinite(daysRaw) && daysRaw > 0
+        ? Math.min(365, Math.floor(daysRaw))
+        : 30;
+
+    const topMusclesLimitRaw = Number(req.query?.topMusclesLimit);
+    const topMusclesLimit =
+      Number.isFinite(topMusclesLimitRaw) && topMusclesLimitRaw > 0
+        ? Math.min(50, Math.floor(topMusclesLimitRaw))
+        : 10;
+
+    const stats = await workoutService.getWorkoutStatsForUser(user, {
+      from,
+      to,
+      days,
+      topMusclesLimit,
+    });
+
+    return res.status(200).json({ userId: user.id, ...stats });
+  } catch (error) {
+    console.error("\x1b[31m%s\x1b[0m", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
  * GET /workouts/today
  *
  * Returns (or creates) today's workout session.
@@ -105,7 +159,8 @@ exports.historyDetail = async (req, res) => {
  * - `performedSets`: array of performed sets
  * - `completed`: boolean
  *
- * When `completed` is updated, the server recalculates `WorkoutHistory.completed`.
+ * When `completed` is updated, the server can auto-complete the workout history
+ * once all exercises are completed.
  */
 exports.updateExerciseProgress = async (req, res) => {
   try {
@@ -142,7 +197,7 @@ exports.updateExerciseProgress = async (req, res) => {
 /**
  * POST /workouts/history/:workoutHistoryId/finish
  *
- * Marks a workout history as completed if all exercises are completed.
+ * Marks a workout history as finished (validated).
  * Returns `{ message: "work_already_done" }` if it was already finished.
  */
 exports.finishWorkout = async (req, res) => {

@@ -33,6 +33,11 @@ class DashboardScreen extends StatelessWidget {
             final logs = app.logs;
             final hasActiveSession = app.activeSession != null;
 
+            final stats = dashboard.stats;
+            final summary = stats?.summary;
+            final gamification = stats?.gamification;
+            final range = stats?.range;
+
             final categories = _categoriesFromLogs(logs);
             final selectedCategory =
                 categories.contains(dashboard.selectedCategory)
@@ -48,18 +53,49 @@ class DashboardScreen extends StatelessWidget {
                     .toList();
 
             final chartPoints = _chartPoints(filteredLogs);
-            final totalWorkouts = logs.length;
+            final apiByDay = stats?.byDay ?? const [];
+            final apiChartPoints = apiByDay.isEmpty
+                ? null
+                : apiByDay.length <= 7
+                    ? apiByDay
+                        .map(
+                          (d) => ChartPoint(
+                            label: _weekdayShort(d.date),
+                            value: ((d.metrics?.completionRate ?? 0) * 100)
+                                .clamp(0, 100)
+                                .toDouble(),
+                          ),
+                        )
+                        .toList(growable: false)
+                    : apiByDay
+                        .sublist(apiByDay.length - 7)
+                        .map(
+                          (d) => ChartPoint(
+                            label: _weekdayShort(d.date),
+                            value: ((d.metrics?.completionRate ?? 0) * 100)
+                                .clamp(0, 100)
+                                .toDouble(),
+                          ),
+                        )
+                        .toList(growable: false);
+
+            final totalWorkouts = summary?.sessionsFinished ?? logs.length;
             final totalVolume =
                 logs.fold<double>(0, (acc, l) => acc + l.totalVolume);
-            final avgDuration = totalWorkouts == 0
+            final avgDuration = summary?.avgEstimatedDurationMinutes ??
+                summary?.avgElapsedMinutesApprox;
+            final fallbackAvgDuration = logs.isEmpty
                 ? 0
                 : (logs.fold<int>(0, (acc, l) => acc + l.durationMinutes) /
-                        totalWorkouts)
+                        logs.length)
                     .round();
+            final avgDurationLabel =
+                avgDuration?.toString() ?? '$fallbackAvgDuration';
 
             return SafeArea(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
+                padding: EdgeInsets.fromLTRB(
+                    20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -76,14 +112,27 @@ class DashboardScreen extends StatelessWidget {
                               foreground: Paint()
                                 ..shader = const LinearGradient(
                                   colors: [AppColors.volt, AppColors.greenMint],
-                                ).createShader(const Rect.fromLTWH(0, 0, 260, 60)),
+                                ).createShader(
+                                    const Rect.fromLTWH(0, 0, 260, 60)),
                             ),
                           ),
                         ],
                       ),
-                      style: AppTextStyles.display(size: 36, letterSpacing: -1.6),
+                      style:
+                          AppTextStyles.display(size: 36, letterSpacing: -1.6),
                     ),
                     const SizedBox(height: 18),
+                    if (dashboard.isLoadingStats) ...[
+                      const LinearProgressIndicator(minHeight: 2),
+                      const SizedBox(height: 12),
+                    ] else if (dashboard.statsErrorMessage != null) ...[
+                      Text(
+                        dashboard.statsErrorMessage!,
+                        style: AppTextStyles.label(
+                            size: 12, color: AppColors.grey600),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     if (hasActiveSession) ...[
                       _ActiveSessionBanner(onTap: onResumeSession),
                       const SizedBox(height: 16),
@@ -106,20 +155,114 @@ class DashboardScreen extends StatelessWidget {
                             icon: Icons.show_chart_rounded,
                             iconColor: AppColors.purple,
                             label: 'AVG TIME',
-                            value: '$avgDuration',
+                            value: avgDurationLabel,
                             suffix: 'm',
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
+                    if (gamification != null) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.stars_rounded,
+                              iconColor: AppColors.volt,
+                              label: 'POINTS',
+                              value: '${gamification.points}',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.emoji_events_rounded,
+                              iconColor: AppColors.greenMint,
+                              label: 'LEVEL',
+                              value: '${gamification.level}',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     _ChartCard(
-                      categories: categories,
-                      selectedCategory: selectedCategory,
-                      onSelectCategory: dashboard.selectCategory,
-                      points: chartPoints,
+                      categories: apiChartPoints == null ? categories : null,
+                      selectedCategory:
+                          apiChartPoints == null ? selectedCategory : null,
+                      onSelectCategory: apiChartPoints == null
+                          ? dashboard.selectCategory
+                          : null,
+                      title: apiChartPoints == null
+                          ? 'Performance'
+                          : 'Completion rate',
+                      badgeLabel: apiChartPoints == null
+                          ? 'LIVE'
+                          : (apiByDay.isEmpty
+                              ? 'STATS'
+                              : (apiByDay.last.performance?.label
+                                      ?.toUpperCase() ??
+                                  'STATS')),
+                      points: apiChartPoints ?? chartPoints,
                     ),
                     const SizedBox(height: 16),
+                    if ((stats?.topMuscles ?? const []).isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'TOP MUSCLES',
+                              style: AppTextStyles.caps(
+                                  color: AppColors.grey600, letterSpacing: 2.2),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: (stats!.topMuscles.take(10)).map((m) {
+                                final score = m.score;
+                                final scoreLabel =
+                                    score == score.roundToDouble()
+                                        ? score.toStringAsFixed(0)
+                                        : score.toStringAsFixed(1);
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceHighlight,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '${m.name.toUpperCase()} • $scoreLabel',
+                                    style: AppTextStyles.label(
+                                        size: 11,
+                                        weight: FontWeight.w900,
+                                        letterSpacing: 0.6,
+                                        color: AppColors.grey500),
+                                  ),
+                                );
+                              }).toList(growable: false),
+                            ),
+                            if (range != null) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                '${range.startDate} → ${range.endDate} (${range.days}d)',
+                                style: AppTextStyles.label(
+                                    size: 12, color: AppColors.grey600),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
@@ -130,7 +273,8 @@ class DashboardScreen extends StatelessWidget {
                         children: [
                           Text(
                             'DAILY MANTRA',
-                            style: AppTextStyles.caps(color: AppColors.grey600, letterSpacing: 3),
+                            style: AppTextStyles.caps(
+                                color: AppColors.grey600, letterSpacing: 3),
                           ),
                           const SizedBox(height: 10),
                           Text(
