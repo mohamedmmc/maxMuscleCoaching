@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Muscle Coaching — Technical Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @page { size: A4; margin: 0; }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: #1E293B;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ── Cover Page ── */
+        .cover {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 50%, #0F0F0F 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23CCFF00' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: 0;
+        }
+
+        .cover > * { position: relative; z-index: 1; }
+
+        .cover-icon {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #CCFF00, #A3CC00);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 60px rgba(204, 255, 0, 0.3);
+        }
+
+        .cover h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 0.75rem;
+        }
+
+        .cover h1 span {
+            background: linear-gradient(135deg, #CCFF00, #A3CC00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .cover .tagline {
+            font-size: 1.125rem;
+            color: #94A3B8;
+            max-width: 550px;
+            margin: 0 auto 0.5rem;
+            font-weight: 400;
+        }
+
+        .cover .subtitle {
+            font-size: 0.8125rem;
+            color: #64748B;
+            margin-bottom: 3rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .cover-badges {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .cover-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(204, 255, 0, 0.15);
+            border-radius: 16px;
+            padding: 1.25rem 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .cover-badge .number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #CCFF00;
+            line-height: 1;
+        }
+
+        .cover-badge .label {
+            font-size: 0.6875rem;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .cover-footer {
+            margin-top: 3rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .cover-footer span {
+            font-size: 0.75rem;
+            color: #64748B;
+        }
+
+        .cover-footer .dot {
+            width: 4px; height: 4px;
+            background: #CCFF00;
+            border-radius: 50%;
+        }
+
+        /* ── Content Pages ── */
+        .page {
+            min-height: 100vh;
+            padding: 3rem;
+            page-break-after: always;
+            position: relative;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #CCFF00, transparent);
+        }
+
+        /* ── Section Headers ── */
+        .section-label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #CCFF00;
+            background: #0A0A0A;
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-subtitle {
+            font-size: 1rem;
+            color: #64748B;
+            max-width: 600px;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .section-divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #CCFF00, #A3CC00);
+            border-radius: 2px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Grid Layouts ── */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; }
+
+        /* ── Cards ── */
+        .card {
+            border: 1px solid #E2E8F0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.8125rem;
+            color: #64748B;
+            line-height: 1.5;
+        }
+
+        /* ── Icon Colors ── */
+        .icon-volt { background: #F0FFB3; color: #6B8A00; }
+        .icon-green { background: #D1FAE5; color: #059669; }
+        .icon-blue { background: #DBEAFE; color: #2563EB; }
+        .icon-purple { background: #EDE9FE; color: #7C3AED; }
+        .icon-amber { background: #FEF3C7; color: #D97706; }
+        .icon-rose { background: #FFE4E6; color: #E11D48; }
+        .icon-cyan { background: #CFFAFE; color: #0891B2; }
+        .icon-indigo { background: #E0E7FF; color: #4F46E5; }
+
+        /* ── Tables ── */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.8125rem;
+        }
+
+        .data-table thead th {
+            background: #F8FAFC;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748B;
+            border-bottom: 2px solid #E2E8F0;
+        }
+
+        .data-table thead th:first-child { border-radius: 8px 0 0 0; }
+        .data-table thead th:last-child { border-radius: 0 8px 0 0; }
+
+        .data-table tbody td {
+            padding: 0.625rem 1rem;
+            border-bottom: 1px solid #F1F5F9;
+            color: #334155;
+            vertical-align: top;
+        }
+
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:hover { background: #FAFBFC; }
+
+        /* ── API Endpoint Badges ── */
+        .method-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            min-width: 52px;
+            text-align: center;
+        }
+
+        .method-get { background: #D1FAE5; color: #065F46; }
+        .method-post { background: #DBEAFE; color: #1E40AF; }
+        .method-put { background: #FEF3C7; color: #92400E; }
+        .method-delete { background: #FFE4E6; color: #9F1239; }
+
+        .endpoint-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: #334155;
+        }
+
+        /* ── Architecture Diagram ── */
+        .arch-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .arch-node {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            min-width: 140px;
+        }
+
+        .arch-node-primary {
+            background: #0A0A0A;
+            color: #CCFF00;
+            border: 2px solid #CCFF00;
+        }
+
+        .arch-node-secondary {
+            background: #F0FFB3;
+            color: #3D5200;
+            border: 2px solid #CCFF00;
+        }
+
+        .arch-node-db {
+            background: #DBEAFE;
+            color: #1E40AF;
+            border: 2px solid #3B82F6;
+        }
+
+        .arch-arrow {
+            font-size: 1.5rem;
+            color: #94A3B8;
+            padding: 0 0.75rem;
+        }
+
+        .arch-node small {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        /* ── Feature List ── */
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-check {
+            width: 24px;
+            height: 24px;
+            background: #F0FFB3;
+            border: 2px solid #CCFF00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #6B8A00;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .feature-text {
+            font-size: 0.8125rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .feature-text strong { color: #0F172A; }
+
+        /* ── Tech Badges ── */
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #334155;
+            margin: 0.25rem;
+        }
+
+        /* ── Stats Bar ── */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #0A0A0A, #1A1A2E);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-box .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #CCFF00;
+            line-height: 1;
+        }
+
+        .stat-box .stat-label {
+            font-size: 0.6875rem;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.375rem;
+        }
+
+        /* ── Flow Diagram ── */
+        .flow-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 0.625rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #334155;
+            text-align: center;
+        }
+
+        .flow-step-active {
+            background: #0A0A0A;
+            border-color: #CCFF00;
+            color: #CCFF00;
+        }
+
+        .flow-arrow { color: #CBD5E1; font-size: 1rem; }
+
+        /* ── Highlight Box ── */
+        .highlight-box {
+            background: linear-gradient(135deg, #FEFFF5, #F0FFB3);
+            border: 1px solid #CCFF00;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .highlight-box h4 {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #3D5200;
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-box p {
+            font-size: 0.8125rem;
+            color: #4A5E1A;
+            line-height: 1.5;
+        }
+
+        /* ── Check Marks ── */
+        .check-yes { color: #059669; font-weight: 700; }
+        .check-no { color: #DC2626; font-weight: 700; }
+
+        /* ── Dark Section ── */
+        .dark-section {
+            background: #0A0A0A;
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            color: white;
+        }
+
+        .dark-section h3 {
+            color: #CCFF00;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .dark-section p, .dark-section li {
+            color: #CBD5E1;
+            font-size: 0.8125rem;
+        }
+
+        /* ── Print ── */
+        @media print {
+            .page { page-break-after: always; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card:hover { box-shadow: none; }
+        }
+
+        .mt-1 { margin-top: 1rem; }
+        .mt-2 { margin-top: 2rem; }
+        .mb-1 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 2rem; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     COVER PAGE
+     ════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-icon">💪</div>
+    <h1>MAX MUSCLE<br><span>COACHING</span></h1>
+    <p class="tagline">Smart fitness coaching mobile app with real-time progress tracking and personalized recommendation engine</p>
+    <p class="subtitle">Technical Portfolio — Complete Documentation</p>
+
+    <div class="cover-badges">
+        <div class="cover-badge">
+            <div class="number">11</div>
+            <div class="label">DB Models</div>
+        </div>
+        <div class="cover-badge">
+            <div class="number">10</div>
+            <div class="label">API Endpoints</div>
+        </div>
+        <div class="cover-badge">
+            <div class="number">7</div>
+            <div class="label">App Screens</div>
+        </div>
+        <div class="cover-badge">
+            <div class="number">4</div>
+            <div class="label">Languages</div>
+        </div>
+    </div>
+
+    <div class="cover-footer">
+        <span>Node.js / Express</span>
+        <div class="dot"></div>
+        <span>Flutter / Dart</span>
+        <div class="dot"></div>
+        <span>MySQL / Sequelize</span>
+        <div class="dot"></div>
+        <span>JWT Auth</span>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 1 — EXECUTIVE SUMMARY
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">01 — Overview</div>
+    <h2 class="section-title">Executive Summary</h2>
+    <p class="section-subtitle">
+        Max Muscle Coaching is a full-stack fitness coaching platform combining a robust REST API with a cross-platform Flutter mobile application.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+        <div>
+            <div class="card">
+                <div class="card-icon icon-volt">🎯</div>
+                <h3>Mission</h3>
+                <p>Deliver a personalized coaching experience through an intelligent recommendation engine that adapts to each user's profile, preferences, and progress over time.</p>
+            </div>
+
+            <div class="card mt-1">
+                <div class="card-icon icon-green">👥</div>
+                <h3>Target Audience</h3>
+                <p>Athletes of all levels — beginners, intermediate, and advanced — looking to structure their gym or home workouts with detailed progress tracking.</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-icon icon-blue">⚡</div>
+                <h3>Key Features</h3>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Smart workouts</strong> — Automatic daily assignment based on split and schedule</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Real-time tracking</strong> — Set-by-set logging with weight, reps, and notes</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Advanced analytics</strong> — Gamification, trends, targeted muscles</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Multi-auth</strong> — Email, Google, Facebook, Apple</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Multi-language</strong> — EN, FR, ES, AR</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-bar mt-2">
+        <div class="stat-box">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Applications</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">77</div>
+            <div class="stat-label">Dart Files</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">11</div>
+            <div class="stat-label">DB Tables</div>
+        </div>
+    </div>
+
+    <div class="highlight-box">
+        <h4>🏗️ Full-Stack Architecture</h4>
+        <p>The project consists of two distinct applications: a Node.js/Express backend server exposing a JWT-secured REST API, and a Flutter mobile app using GetX for state management. Both communicate over HTTP with an automatic token renewal system.</p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 2 — TECHNICAL ARCHITECTURE
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">02 — Architecture</div>
+    <h2 class="section-title">Technical Architecture</h2>
+    <p class="section-subtitle">
+        Modern full-stack with clear separation of concerns and secure RESTful communication.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="arch-diagram">
+        <div class="arch-node arch-node-secondary">
+            📱 Flutter App
+            <small>iOS / Android / macOS</small>
+        </div>
+        <div class="arch-arrow">⟷</div>
+        <div class="arch-node arch-node-primary">
+            ⚙️ REST API
+            <small>Express.js / Port 3001</small>
+        </div>
+        <div class="arch-arrow">⟷</div>
+        <div class="arch-node arch-node-db">
+            🗄️ MySQL
+            <small>Sequelize ORM</small>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Technology Stack</h3>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-icon icon-green">🖥️</div>
+            <h3>Backend — Node.js</h3>
+            <div style="margin-top: 0.75rem;">
+                <span class="tech-badge">Express.js 4.19</span>
+                <span class="tech-badge">Sequelize 6.28</span>
+                <span class="tech-badge">MySQL2</span>
+                <span class="tech-badge">JWT</span>
+                <span class="tech-badge">Bcrypt 5.1</span>
+                <span class="tech-badge">Nodemailer</span>
+                <span class="tech-badge">Sharp</span>
+                <span class="tech-badge">Node-Cron</span>
+                <span class="tech-badge">Firebase Admin</span>
+                <span class="tech-badge">ExcelJS</span>
+                <span class="tech-badge">Docker</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-blue">📱</div>
+            <h3>Frontend — Flutter / Dart</h3>
+            <div style="margin-top: 0.75rem;">
+                <span class="tech-badge">Flutter SDK 3.6.1+</span>
+                <span class="tech-badge">GetX 4.6.6</span>
+                <span class="tech-badge">HTTP 1.2.0</span>
+                <span class="tech-badge">JWT Decoder</span>
+                <span class="tech-badge">Google Sign-In</span>
+                <span class="tech-badge">SharedPreferences</span>
+                <span class="tech-badge">Font Awesome</span>
+                <span class="tech-badge">Logger</span>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Architectural Patterns</h3>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-icon icon-purple">🧩</div>
+            <h3>MVC + Service Layer</h3>
+            <p>Controllers → Services → Models with clear separation between request handling, business logic, and data access.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-amber">📦</div>
+            <h3>Repository Pattern</h3>
+            <p>Flutter-side abstraction layer centralizing API calls and response parsing for clean data access.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-cyan">💉</div>
+            <h3>Dependency Injection</h3>
+            <p>Services registered as permanent singletons via GetX at app startup for consistent state management.</p>
+        </div>
+    </div>
+
+    <div class="dark-section mt-2">
+        <h3>🔐 Authentication System</h3>
+        <div class="flow-steps">
+            <div class="flow-step">Login / Signup</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step flow-step-active">JWT Access Token</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">API Requests</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Token Expired (1min)</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step flow-step-active">Refresh Token (90d)</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">New JWT</div>
+        </div>
+        <p style="text-align: center; margin-top: 1rem;">Transparent automatic renewal on the client side — Multi-method support: Email/Password, Google, Facebook, Apple</p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 3 — DATA MODEL
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">03 — Database</div>
+    <h2 class="section-title">Data Model</h2>
+    <p class="section-subtitle">
+        11 MySQL tables with complex relationships via foreign keys and join tables, managed by Sequelize ORM.
+    </p>
+    <div class="section-divider"></div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Model</th>
+                <th>Key Fields</th>
+                <th>Relationships</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>User</strong></td>
+                <td>name, email, password, googleId, facebookId, appleId, age, weight, height, gender, fitnessLevel, split, daysPerWeek, location</td>
+                <td>hasMany WorkoutHistory</td>
+                <td>User profile & preferences</td>
+            </tr>
+            <tr>
+                <td><strong>Exercise</strong></td>
+                <td>name, force, level, mechanic, equipment, category</td>
+                <td>belongsToMany Muscle, WorkoutTemplate; hasMany Gallery, Instruction</td>
+                <td>Exercise catalog</td>
+            </tr>
+            <tr>
+                <td><strong>Muscle</strong></td>
+                <td>name (unique)</td>
+                <td>belongsToMany Exercise</td>
+                <td>Muscle groups</td>
+            </tr>
+            <tr>
+                <td><strong>ExerciseMuscle</strong></td>
+                <td>role ("primary" | "secondary")</td>
+                <td>Join: Exercise ↔ Muscle</td>
+                <td>Muscle targeting</td>
+            </tr>
+            <tr>
+                <td><strong>Gallery</strong></td>
+                <td>link, type (image | video)</td>
+                <td>belongsTo Exercise</td>
+                <td>Exercise media</td>
+            </tr>
+            <tr>
+                <td><strong>Instruction</strong></td>
+                <td>text</td>
+                <td>belongsTo Exercise</td>
+                <td>Exercise instructions</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutTemplate</strong></td>
+                <td>name, dayOfWeek, focus, category, split, fitnessLevel, location, isRestDay, estimatedDurationMinutes</td>
+                <td>belongsToMany Exercise; hasMany WorkoutHistory</td>
+                <td>Pre-designed workout plans</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutTemplateExercise</strong></td>
+                <td>orderIndex, sets, reps, restSeconds, notes</td>
+                <td>Join: WorkoutTemplate ↔ Exercise</td>
+                <td>Exercise/template config</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutHistory</strong></td>
+                <td>userId, workoutTemplateId, dateAssigned, completed</td>
+                <td>belongsTo User, WorkoutTemplate; hasMany WorkoutHistoryExercise</td>
+                <td>Workout sessions</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutHistoryExercise</strong></td>
+                <td>sets, reps, restSeconds, notes, performedSets (JSON), completed</td>
+                <td>belongsTo WorkoutHistory</td>
+                <td>Per-exercise progress</td>
+            </tr>
+            <tr>
+                <td><strong>VerificationCode</strong></td>
+                <td>code, email/phone, expiresAt</td>
+                <td>—</td>
+                <td>Email/phone verification</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box mt-2">
+        <h4>🔗 Key Relationships</h4>
+        <p>
+            <strong>User → WorkoutHistory</strong>: A user has multiple sessions. <strong>WorkoutTemplate → Exercise</strong>: Many-to-Many via join table with metadata (sets, reps, order). <strong>Exercise → Muscle</strong>: Many-to-Many with role (primary/secondary). <strong>WorkoutHistory → WorkoutHistoryExercise</strong>: Granular per-exercise performance tracking with JSON set data.
+        </p>
+    </div>
+
+    <div class="dark-section">
+        <h3>📊 Performance Data Structure</h3>
+        <p style="margin-bottom: 0.75rem;">Each completed exercise stores a JSON array of performed sets:</p>
+        <div style="background: #1A1A2E; border-radius: 8px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #CCFF00;">
+            performedSets: [<br>
+            &nbsp;&nbsp;{ "setNumber": 1, "reps": 12, "weight": 60, "notes": "" },<br>
+            &nbsp;&nbsp;{ "setNumber": 2, "reps": 10, "weight": 65, "notes": "Last rep was tough" },<br>
+            &nbsp;&nbsp;{ "setNumber": 3, "reps": 8, "weight": 70, "notes": "" }<br>
+            ]
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 4 — REST API
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">04 — Backend API</div>
+    <h2 class="section-title">REST API Documentation</h2>
+    <p class="section-subtitle">
+        10 RESTful endpoints secured by JWT, organized into two domains: user authentication and workout management.
+    </p>
+    <div class="section-divider"></div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">🔐 User Routes — <span style="font-family: 'JetBrains Mono', monospace; color: #64748B;">/users</span></h3>
+
+    <table class="data-table mb-2">
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Auth</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/users/signin</td>
+                <td>—</td>
+                <td>Sign in (email/phone + password OR social IDs)</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/users/signup</td>
+                <td>—</td>
+                <td>Register with profile and fitness preferences</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/users/renew</td>
+                <td>Refresh Token</td>
+                <td>Renew JWT access token</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/users/profile</td>
+                <td>JWT Bearer</td>
+                <td>Get authenticated user profile</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">🏋️ Workout Routes — <span style="font-family: 'JetBrains Mono', monospace; color: #64748B;">/workouts</span></h3>
+
+    <table class="data-table mb-2">
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Parameters</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/recommended</td>
+                <td>—</td>
+                <td>Recommended templates based on user profile</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/today</td>
+                <td>—</td>
+                <td>Get or create today's session with exercises</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/stats</td>
+                <td>from, to, days, topMusclesLimit</td>
+                <td>Complete stats with gamification and trends</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/history</td>
+                <td>limit, offset</td>
+                <td>Paginated history of past sessions</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/history/:id</td>
+                <td>workoutHistoryId</td>
+                <td>Session detail with per-exercise progress</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-put">PUT</span></td>
+                <td class="endpoint-path">/workouts/history/:id/exercises/:exerciseId</td>
+                <td>performedSets, completed</td>
+                <td>Update exercise progress</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/workouts/history/:id/finish</td>
+                <td>workoutHistoryId</td>
+                <td>Mark workout as completed</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="dark-section">
+        <h3>📈 Stats Endpoint Response — /workouts/stats</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">📊 Summary</p>
+                <p>Completed sessions, exercises done, total sets/reps, total volume, average duration</p>
+            </div>
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">🎮 Gamification</p>
+                <p>Accumulated points, current level, next level threshold, progress percentage</p>
+            </div>
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">📈 Trends</p>
+                <p>Rolling 7-day comparison vs previous 7 days with progress indicators</p>
+            </div>
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">💪 Top Muscles</p>
+                <p>Ranked most-worked muscles with score and training day count</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 5 — MOBILE APPLICATION
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">05 — Mobile App</div>
+    <h2 class="section-title">Screens & Features</h2>
+    <p class="section-subtitle">
+        Cross-platform Flutter app with premium dark design, tab navigation, and smooth user experience.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-icon icon-volt">🔐</div>
+            <h3>Login Screen</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Email + password with validation</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">"Stay logged in" option (refresh token)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Google Sign-In integration</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Forgot password link</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Navigate to signup / onboarding</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-green">📊</div>
+            <h3>Dashboard</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Motivational hero greeting</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Active session banner (if in progress)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Stats cards (sessions, duration, points, level)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">7-day performance chart</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Top muscles worked with scores</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-blue">🏋️</div>
+            <h3>Workout Screen</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Today's workout preview before starting</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Exercise details with images and instructions</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Set-by-set logging (weight, reps, notes)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Adjustable rest timer between sets</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Rest day view with mobility/stretching</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-purple">👤</div>
+            <h3>Profile</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Avatar and basic info</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Fitness stats (weight, height, age)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Workout preferences (split, location, level)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Linked social accounts management</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Settings: language, password, delete account</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-amber">🚀</div>
+            <h3>Onboarding</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Step 1:</strong> Name, age, gender</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Step 2:</strong> Fitness level and goals</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Step 3:</strong> Split, location, frequency</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-rose">🔑</div>
+            <h3>Forgot Password</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Email code sending</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">OTP verification</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Password reset</div></div>
+        </div>
+    </div>
+
+    <div class="highlight-box mt-2">
+        <h4>🎨 Design System</h4>
+        <p>
+            Exclusive dark theme with <strong style="color: #6B8A00;">Volt (#CCFF00)</strong> accent color — Custom fonts via AppTextStyles — Reusable components: GlassDock (glassmorphic navigation), PrimaryButton, ExerciseCard, SimpleAreaChart — Shimmer loading states for seamless UX.
+        </p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 6 — SMART WORKOUT ENGINE
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">06 — Intelligence</div>
+    <h2 class="section-title">Smart Workout Engine</h2>
+    <p class="section-subtitle">
+        Sophisticated workout assignment and recommendation algorithm based on user profile and training history.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+        <div>
+            <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">Supported Splits</h3>
+            <div class="card mb-1">
+                <h3>Push / Pull / Legs</h3>
+                <p>Movement-based separation — push, pull, legs. Ideal for 3-6 days/week.</p>
+            </div>
+            <div class="card mb-1">
+                <h3>Upper / Lower</h3>
+                <p>Alternating upper and lower body. Best suited for 4 days/week.</p>
+            </div>
+            <div class="card mb-1">
+                <h3>Full Body</h3>
+                <p>Complete body training each session. Optimal for 2-3 days/week.</p>
+            </div>
+            <div class="card">
+                <h3>Bro Split</h3>
+                <p>One muscle group per day. For advanced lifters, 5-6 days/week.</p>
+            </div>
+        </div>
+
+        <div>
+            <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">Selection Logic (5-Tier Fallback)</h3>
+            <div class="dark-section" style="margin: 0;">
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #CCFF00; color: #0A0A0A; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 1</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Strict Match</span>
+                    </div>
+                    <p>Split + category + level + location + duration, avoiding recently used templates</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #A3CC00; color: #0A0A0A; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 2</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Ignore Duration</span>
+                    </div>
+                    <p>Same criteria without estimated duration constraint</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #7A9900; color: white; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 3</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Allow Repeats</span>
+                    </div>
+                    <p>Permits reusing recently assigned templates</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #526600; color: white; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 4</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Broader Category</span>
+                    </div>
+                    <p>Any template matching the split and category</p>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #334400; color: #CCFF00; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 5</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Fallback</span>
+                    </div>
+                    <p>Any available non-rest template</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Automatic Training Schedule</h3>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Days/Week</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+                <th>Sun</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>3 days</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>4 days</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>5 days</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>6 days</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>7 days</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box mt-2">
+        <h4>🎮 Gamification System</h4>
+        <p>
+            Users accumulate <strong>points</strong> based on completed sessions, total volume, and consistency. The system calculates a <strong>level</strong> with a progression threshold to the next level, encouraging ongoing engagement. Rolling 7-day trends compare current performance against the previous week.
+        </p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 7 — FEATURE MATRIX & DIFFERENTIATORS
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">07 — Features</div>
+    <h2 class="section-title">Feature Matrix & Differentiators</h2>
+    <p class="section-subtitle">
+        Complete overview of platform capabilities and what sets Max Muscle Coaching apart.
+    </p>
+    <div class="section-divider"></div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">Feature Matrix</h3>
+
+    <table class="data-table mb-2">
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Backend API</th>
+                <th>Mobile App</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Sign Up / Sign In</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Multi-method (email, Google, Facebook, Apple)</td>
+            </tr>
+            <tr>
+                <td>JWT Renewal</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Transparent auto-refresh (access 1min, refresh 90d)</td>
+            </tr>
+            <tr>
+                <td>User Profile</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Physical data + training preferences</td>
+            </tr>
+            <tr>
+                <td>Workout Recommendation</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>5-tier algorithm based on preferences</td>
+            </tr>
+            <tr>
+                <td>Daily Workout</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Automatic daily assignment</td>
+            </tr>
+            <tr>
+                <td>Exercise Tracking</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Set-by-set logging with weight and reps</td>
+            </tr>
+            <tr>
+                <td>Rest Timer</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td>Adjustable countdown on client side</td>
+            </tr>
+            <tr>
+                <td>Advanced Statistics</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Volume, duration, completion rate, trends</td>
+            </tr>
+            <tr>
+                <td>Gamification</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Points, levels, progression</td>
+            </tr>
+            <tr>
+                <td>Multi-language</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td>EN, FR, ES, AR (client-side)</td>
+            </tr>
+            <tr>
+                <td>Push Notifications</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Via Firebase Cloud Messaging</td>
+            </tr>
+            <tr>
+                <td>Exercise Gallery</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Images and videos for each exercise</td>
+            </tr>
+            <tr>
+                <td>Email/OTP Verification</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Code sending via Nodemailer</td>
+            </tr>
+            <tr>
+                <td>Offline Mode</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td>Connectivity detection + retry screen</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Key Differentiators</h3>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-icon icon-volt">🧠</div>
+            <h3>Selection Intelligence</h3>
+            <p>5-tier fallback algorithm guaranteeing a tailored workout every time, never an empty session.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-green">📊</div>
+            <h3>Complete Analytics</h3>
+            <p>Gamification with points/levels, 7-day trends, muscle ranking, completion rates.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-blue">🔒</div>
+            <h3>Robust Security</h3>
+            <p>Dual JWT tokens (1min/90d), bcrypt hashing, auto-refresh, multi-social auth.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-purple">🌍</div>
+            <h3>Multi-Language</h3>
+            <p>4 supported languages (EN, FR, ES, AR) with GetX integrated translation system.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-amber">📱</div>
+            <h3>Cross-Platform</h3>
+            <p>Single Flutter codebase for iOS, Android, and macOS with premium dark theme.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-rose">🐳</div>
+            <h3>Docker Ready</h3>
+            <p>Containerized backend with Node.js 18 Alpine, ready for cloud deployment.</p>
+        </div>
+    </div>
+
+    <div class="dark-section mt-2" style="text-align: center;">
+        <h3>🚀 Production Ready</h3>
+        <p style="max-width: 500px; margin: 0 auto;">
+            Max Muscle Coaching is a complete platform, from signup to gamification, designed to guide athletes through their daily progression with intelligence and precision.
+        </p>
+        <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 2rem;">
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #CCFF00;">Full-Stack</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">Node.js + Flutter</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #CCFF00;">RESTful</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">JWT-Secured API</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #CCFF00;">Intelligent</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">Recommendation Engine</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

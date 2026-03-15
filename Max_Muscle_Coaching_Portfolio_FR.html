@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Muscle Coaching — Portfolio Technique</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @page { size: A4; margin: 0; }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: #1E293B;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ── Cover Page ── */
+        .cover {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 50%, #0F0F0F 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23CCFF00' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: 0;
+        }
+
+        .cover > * { position: relative; z-index: 1; }
+
+        .cover-icon {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #CCFF00, #A3CC00);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 60px rgba(204, 255, 0, 0.3);
+        }
+
+        .cover h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 0.75rem;
+        }
+
+        .cover h1 span {
+            background: linear-gradient(135deg, #CCFF00, #A3CC00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .cover .tagline {
+            font-size: 1.125rem;
+            color: #94A3B8;
+            max-width: 550px;
+            margin: 0 auto 0.5rem;
+            font-weight: 400;
+        }
+
+        .cover .subtitle {
+            font-size: 0.8125rem;
+            color: #64748B;
+            margin-bottom: 3rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .cover-badges {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .cover-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(204, 255, 0, 0.15);
+            border-radius: 16px;
+            padding: 1.25rem 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .cover-badge .number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #CCFF00;
+            line-height: 1;
+        }
+
+        .cover-badge .label {
+            font-size: 0.6875rem;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .cover-footer {
+            margin-top: 3rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .cover-footer span {
+            font-size: 0.75rem;
+            color: #64748B;
+        }
+
+        .cover-footer .dot {
+            width: 4px; height: 4px;
+            background: #CCFF00;
+            border-radius: 50%;
+        }
+
+        /* ── Content Pages ── */
+        .page {
+            min-height: 100vh;
+            padding: 3rem;
+            page-break-after: always;
+            position: relative;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #CCFF00, transparent);
+        }
+
+        /* ── Section Headers ── */
+        .section-label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #CCFF00;
+            background: #0A0A0A;
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-subtitle {
+            font-size: 1rem;
+            color: #64748B;
+            max-width: 600px;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .section-divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #CCFF00, #A3CC00);
+            border-radius: 2px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Grid Layouts ── */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; }
+
+        /* ── Cards ── */
+        .card {
+            border: 1px solid #E2E8F0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.8125rem;
+            color: #64748B;
+            line-height: 1.5;
+        }
+
+        /* ── Icon Colors ── */
+        .icon-volt { background: #F0FFB3; color: #6B8A00; }
+        .icon-green { background: #D1FAE5; color: #059669; }
+        .icon-blue { background: #DBEAFE; color: #2563EB; }
+        .icon-purple { background: #EDE9FE; color: #7C3AED; }
+        .icon-amber { background: #FEF3C7; color: #D97706; }
+        .icon-rose { background: #FFE4E6; color: #E11D48; }
+        .icon-cyan { background: #CFFAFE; color: #0891B2; }
+        .icon-indigo { background: #E0E7FF; color: #4F46E5; }
+
+        /* ── Tables ── */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.8125rem;
+        }
+
+        .data-table thead th {
+            background: #F8FAFC;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748B;
+            border-bottom: 2px solid #E2E8F0;
+        }
+
+        .data-table thead th:first-child { border-radius: 8px 0 0 0; }
+        .data-table thead th:last-child { border-radius: 0 8px 0 0; }
+
+        .data-table tbody td {
+            padding: 0.625rem 1rem;
+            border-bottom: 1px solid #F1F5F9;
+            color: #334155;
+            vertical-align: top;
+        }
+
+        .data-table tbody tr:last-child td { border-bottom: none; }
+
+        .data-table tbody tr:hover { background: #FAFBFC; }
+
+        /* ── API Endpoint Badges ── */
+        .method-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            min-width: 52px;
+            text-align: center;
+        }
+
+        .method-get { background: #D1FAE5; color: #065F46; }
+        .method-post { background: #DBEAFE; color: #1E40AF; }
+        .method-put { background: #FEF3C7; color: #92400E; }
+        .method-delete { background: #FFE4E6; color: #9F1239; }
+
+        .endpoint-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: #334155;
+        }
+
+        /* ── Architecture Diagram ── */
+        .arch-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .arch-node {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            min-width: 140px;
+        }
+
+        .arch-node-primary {
+            background: #0A0A0A;
+            color: #CCFF00;
+            border: 2px solid #CCFF00;
+        }
+
+        .arch-node-secondary {
+            background: #F0FFB3;
+            color: #3D5200;
+            border: 2px solid #CCFF00;
+        }
+
+        .arch-node-db {
+            background: #DBEAFE;
+            color: #1E40AF;
+            border: 2px solid #3B82F6;
+        }
+
+        .arch-arrow {
+            font-size: 1.5rem;
+            color: #94A3B8;
+            padding: 0 0.75rem;
+        }
+
+        .arch-node small {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        /* ── Feature List ── */
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-check {
+            width: 24px;
+            height: 24px;
+            background: #F0FFB3;
+            border: 2px solid #CCFF00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #6B8A00;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .feature-text {
+            font-size: 0.8125rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .feature-text strong {
+            color: #0F172A;
+        }
+
+        /* ── Tech Badges ── */
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #334155;
+            margin: 0.25rem;
+        }
+
+        /* ── Stats Bar ── */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #0A0A0A, #1A1A2E);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-box .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #CCFF00;
+            line-height: 1;
+        }
+
+        .stat-box .stat-label {
+            font-size: 0.6875rem;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.375rem;
+        }
+
+        /* ── Flow Diagram ── */
+        .flow-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 0.625rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #334155;
+            text-align: center;
+        }
+
+        .flow-step-active {
+            background: #0A0A0A;
+            border-color: #CCFF00;
+            color: #CCFF00;
+        }
+
+        .flow-arrow {
+            color: #CBD5E1;
+            font-size: 1rem;
+        }
+
+        /* ── Highlight Box ── */
+        .highlight-box {
+            background: linear-gradient(135deg, #FEFFF5, #F0FFB3);
+            border: 1px solid #CCFF00;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .highlight-box h4 {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #3D5200;
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-box p {
+            font-size: 0.8125rem;
+            color: #4A5E1A;
+            line-height: 1.5;
+        }
+
+        /* ── Comparison Table ── */
+        .check-yes { color: #059669; font-weight: 700; }
+        .check-no { color: #DC2626; font-weight: 700; }
+
+        /* ── Dark Section ── */
+        .dark-section {
+            background: #0A0A0A;
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            color: white;
+        }
+
+        .dark-section h3 {
+            color: #CCFF00;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .dark-section p, .dark-section li {
+            color: #CBD5E1;
+            font-size: 0.8125rem;
+        }
+
+        /* ── Print ── */
+        @media print {
+            .page { page-break-after: always; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card:hover { box-shadow: none; }
+        }
+
+        /* ── Spacing Helpers ── */
+        .mt-1 { margin-top: 1rem; }
+        .mt-2 { margin-top: 2rem; }
+        .mb-1 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 2rem; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     COVER PAGE
+     ════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-icon">💪</div>
+    <h1>MAX MUSCLE<br><span>COACHING</span></h1>
+    <p class="tagline">Application mobile de coaching fitness intelligent avec suivi de progression en temps réel et moteur de recommandation personnalisé</p>
+    <p class="subtitle">Portfolio Technique — Documentation Complète</p>
+
+    <div class="cover-badges">
+        <div class="cover-badge">
+            <div class="number">11</div>
+            <div class="label">Modèles BDD</div>
+        </div>
+        <div class="cover-badge">
+            <div class="number">10</div>
+            <div class="label">Endpoints API</div>
+        </div>
+        <div class="cover-badge">
+            <div class="number">7</div>
+            <div class="label">Écrans App</div>
+        </div>
+        <div class="cover-badge">
+            <div class="number">4</div>
+            <div class="label">Langues</div>
+        </div>
+    </div>
+
+    <div class="cover-footer">
+        <span>Node.js / Express</span>
+        <div class="dot"></div>
+        <span>Flutter / Dart</span>
+        <div class="dot"></div>
+        <span>MySQL / Sequelize</span>
+        <div class="dot"></div>
+        <span>JWT Auth</span>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 1 — RÉSUMÉ EXÉCUTIF
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">01 — Présentation</div>
+    <h2 class="section-title">Résumé Exécutif</h2>
+    <p class="section-subtitle">
+        Max Muscle Coaching est une plateforme complète de fitness coaching qui combine une API REST robuste avec une application mobile Flutter cross-platform.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+        <div>
+            <div class="card">
+                <div class="card-icon icon-volt">🎯</div>
+                <h3>Mission</h3>
+                <p>Fournir une expérience de coaching personnalisée grâce à un moteur de recommandation intelligent qui s'adapte au profil, aux préférences et à la progression de chaque utilisateur.</p>
+            </div>
+
+            <div class="card mt-1">
+                <div class="card-icon icon-green">👥</div>
+                <h3>Public Cible</h3>
+                <p>Sportifs de tous niveaux — débutants, intermédiaires et avancés — souhaitant structurer leur entraînement en salle ou à domicile avec un suivi détaillé.</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-icon icon-blue">⚡</div>
+                <h3>Fonctionnalités Clés</h3>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Workout intelligent</strong> — Attribution quotidienne automatique selon le split et le planning</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Suivi en temps réel</strong> — Logging set par set avec poids, reps et notes</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Statistiques avancées</strong> — Gamification, tendances, muscles ciblés</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Multi-authentification</strong> — Email, Google, Facebook, Apple</div></div>
+                <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Multi-langue</strong> — FR, EN, ES, AR</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-bar mt-2">
+        <div class="stat-box">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Applications</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">77</div>
+            <div class="stat-label">Fichiers Dart</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">11</div>
+            <div class="stat-label">Tables BDD</div>
+        </div>
+    </div>
+
+    <div class="highlight-box">
+        <h4>🏗️ Architecture Full-Stack</h4>
+        <p>Le projet se compose de deux applications distinctes : un serveur backend Node.js/Express exposant une API REST sécurisée par JWT, et une application mobile Flutter utilisant GetX pour la gestion d'état. Les deux communiquent via HTTP avec un système de renouvellement automatique des tokens.</p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 2 — ARCHITECTURE TECHNIQUE
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">02 — Architecture</div>
+    <h2 class="section-title">Architecture Technique</h2>
+    <p class="section-subtitle">
+        Stack moderne full-stack avec séparation claire des responsabilités et communication RESTful sécurisée.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="arch-diagram">
+        <div class="arch-node arch-node-secondary">
+            📱 Flutter App
+            <small>iOS / Android / macOS</small>
+        </div>
+        <div class="arch-arrow">⟷</div>
+        <div class="arch-node arch-node-primary">
+            ⚙️ API REST
+            <small>Express.js / Port 3001</small>
+        </div>
+        <div class="arch-arrow">⟷</div>
+        <div class="arch-node arch-node-db">
+            🗄️ MySQL
+            <small>Sequelize ORM</small>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Stack Technologique</h3>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-icon icon-green">🖥️</div>
+            <h3>Backend — Node.js</h3>
+            <div style="margin-top: 0.75rem;">
+                <span class="tech-badge">Express.js 4.19</span>
+                <span class="tech-badge">Sequelize 6.28</span>
+                <span class="tech-badge">MySQL2</span>
+                <span class="tech-badge">JWT</span>
+                <span class="tech-badge">Bcrypt 5.1</span>
+                <span class="tech-badge">Nodemailer</span>
+                <span class="tech-badge">Sharp</span>
+                <span class="tech-badge">Node-Cron</span>
+                <span class="tech-badge">Firebase Admin</span>
+                <span class="tech-badge">ExcelJS</span>
+                <span class="tech-badge">Docker</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-blue">📱</div>
+            <h3>Frontend — Flutter / Dart</h3>
+            <div style="margin-top: 0.75rem;">
+                <span class="tech-badge">Flutter SDK 3.6.1+</span>
+                <span class="tech-badge">GetX 4.6.6</span>
+                <span class="tech-badge">HTTP 1.2.0</span>
+                <span class="tech-badge">JWT Decoder</span>
+                <span class="tech-badge">Google Sign-In</span>
+                <span class="tech-badge">SharedPreferences</span>
+                <span class="tech-badge">Font Awesome</span>
+                <span class="tech-badge">Logger</span>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Patterns Architecturaux</h3>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-icon icon-purple">🧩</div>
+            <h3>MVC + Service</h3>
+            <p>Controllers → Services → Models avec séparation claire entre gestion des requêtes, logique métier et accès données.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-amber">📦</div>
+            <h3>Repository Pattern</h3>
+            <p>Couche d'abstraction côté Flutter pour centraliser les appels API et le parsing des réponses.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-cyan">💉</div>
+            <h3>Injection de Dépendances</h3>
+            <p>Services enregistrés comme singletons permanents via GetX au démarrage de l'application.</p>
+        </div>
+    </div>
+
+    <div class="dark-section mt-2">
+        <h3>🔐 Système d'Authentification</h3>
+        <div class="flow-steps">
+            <div class="flow-step">Login / Signup</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step flow-step-active">JWT Access Token</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Requêtes API</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Token Expiré (1min)</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step flow-step-active">Refresh Token (90j)</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Nouveau JWT</div>
+        </div>
+        <p style="text-align: center; margin-top: 1rem;">Renouvellement automatique transparent côté client — Support multi-méthode : Email/Mot de passe, Google, Facebook, Apple</p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 3 — MODÈLE DE DONNÉES
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">03 — Base de Données</div>
+    <h2 class="section-title">Modèle de Données</h2>
+    <p class="section-subtitle">
+        11 tables MySQL avec relations complexes via clés étrangères et tables de jointure, gérées par Sequelize ORM.
+    </p>
+    <div class="section-divider"></div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Modèle</th>
+                <th>Champs Principaux</th>
+                <th>Relations</th>
+                <th>Rôle</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>User</strong></td>
+                <td>name, email, password, googleId, facebookId, appleId, age, weight, height, gender, fitnessLevel, split, daysPerWeek, location</td>
+                <td>hasMany WorkoutHistory</td>
+                <td>Profil utilisateur & préférences</td>
+            </tr>
+            <tr>
+                <td><strong>Exercise</strong></td>
+                <td>name, force, level, mechanic, equipment, category</td>
+                <td>belongsToMany Muscle, WorkoutTemplate; hasMany Gallery, Instruction</td>
+                <td>Catalogue d'exercices</td>
+            </tr>
+            <tr>
+                <td><strong>Muscle</strong></td>
+                <td>name (unique)</td>
+                <td>belongsToMany Exercise</td>
+                <td>Groupes musculaires</td>
+            </tr>
+            <tr>
+                <td><strong>ExerciseMuscle</strong></td>
+                <td>role ("primary" | "secondary")</td>
+                <td>Jointure Exercise ↔ Muscle</td>
+                <td>Ciblage musculaire</td>
+            </tr>
+            <tr>
+                <td><strong>Gallery</strong></td>
+                <td>link, type (image | video)</td>
+                <td>belongsTo Exercise</td>
+                <td>Médias d'exercices</td>
+            </tr>
+            <tr>
+                <td><strong>Instruction</strong></td>
+                <td>text</td>
+                <td>belongsTo Exercise</td>
+                <td>Instructions textuelles</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutTemplate</strong></td>
+                <td>name, dayOfWeek, focus, category, split, fitnessLevel, location, isRestDay, estimatedDurationMinutes</td>
+                <td>belongsToMany Exercise; hasMany WorkoutHistory</td>
+                <td>Plans d'entraînement prédéfinis</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutTemplateExercise</strong></td>
+                <td>orderIndex, sets, reps, restSeconds, notes</td>
+                <td>Jointure WorkoutTemplate ↔ Exercise</td>
+                <td>Configuration exercice/template</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutHistory</strong></td>
+                <td>userId, workoutTemplateId, dateAssigned, completed</td>
+                <td>belongsTo User, WorkoutTemplate; hasMany WorkoutHistoryExercise</td>
+                <td>Sessions d'entraînement</td>
+            </tr>
+            <tr>
+                <td><strong>WorkoutHistoryExercise</strong></td>
+                <td>sets, reps, restSeconds, notes, performedSets (JSON), completed</td>
+                <td>belongsTo WorkoutHistory</td>
+                <td>Progression par exercice</td>
+            </tr>
+            <tr>
+                <td><strong>VerificationCode</strong></td>
+                <td>code, email/phone, expiresAt</td>
+                <td>—</td>
+                <td>Vérification email/téléphone</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box mt-2">
+        <h4>🔗 Relations Clés</h4>
+        <p>
+            <strong>User → WorkoutHistory</strong> : Un utilisateur a plusieurs sessions. <strong>WorkoutTemplate → Exercise</strong> : Many-to-Many via table de jointure avec métadonnées (sets, reps, ordre). <strong>Exercise → Muscle</strong> : Many-to-Many avec rôle (primaire/secondaire). <strong>WorkoutHistory → WorkoutHistoryExercise</strong> : Suivi granulaire de la performance par exercice avec données JSON des sets réalisés.
+        </p>
+    </div>
+
+    <div class="dark-section">
+        <h3>📊 Structure des Données de Performance</h3>
+        <p style="margin-bottom: 0.75rem;">Chaque exercice réalisé stocke un tableau JSON de sets effectués :</p>
+        <div style="background: #1A1A2E; border-radius: 8px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #CCFF00;">
+            performedSets: [<br>
+            &nbsp;&nbsp;{ "setNumber": 1, "reps": 12, "weight": 60, "notes": "" },<br>
+            &nbsp;&nbsp;{ "setNumber": 2, "reps": 10, "weight": 65, "notes": "Dernière rep difficile" },<br>
+            &nbsp;&nbsp;{ "setNumber": 3, "reps": 8, "weight": 70, "notes": "" }<br>
+            ]
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 4 — API REST
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">04 — API Backend</div>
+    <h2 class="section-title">Documentation API REST</h2>
+    <p class="section-subtitle">
+        10 endpoints RESTful sécurisés par JWT, organisés en deux domaines : authentification utilisateur et gestion des workouts.
+    </p>
+    <div class="section-divider"></div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">🔐 Routes Utilisateur — <span style="font-family: 'JetBrains Mono', monospace; color: #64748B;">/users</span></h3>
+
+    <table class="data-table mb-2">
+        <thead>
+            <tr>
+                <th>Méthode</th>
+                <th>Endpoint</th>
+                <th>Authentification</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/users/signin</td>
+                <td>—</td>
+                <td>Connexion (email/phone + mot de passe OU IDs sociaux)</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/users/signup</td>
+                <td>—</td>
+                <td>Inscription avec profil et préférences fitness</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/users/renew</td>
+                <td>Refresh Token</td>
+                <td>Renouvellement du JWT access token</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/users/profile</td>
+                <td>JWT Bearer</td>
+                <td>Récupération du profil utilisateur</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">🏋️ Routes Workout — <span style="font-family: 'JetBrains Mono', monospace; color: #64748B;">/workouts</span></h3>
+
+    <table class="data-table mb-2">
+        <thead>
+            <tr>
+                <th>Méthode</th>
+                <th>Endpoint</th>
+                <th>Paramètres</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/recommended</td>
+                <td>—</td>
+                <td>Templates recommandés selon le profil utilisateur</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/today</td>
+                <td>—</td>
+                <td>Récupère ou crée la session du jour avec exercices</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/stats</td>
+                <td>from, to, days, topMusclesLimit</td>
+                <td>Statistiques complètes avec gamification et tendances</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/history</td>
+                <td>limit, offset</td>
+                <td>Historique paginé des sessions passées</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td class="endpoint-path">/workouts/history/:id</td>
+                <td>workoutHistoryId</td>
+                <td>Détail d'une session avec progression par exercice</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-put">PUT</span></td>
+                <td class="endpoint-path">/workouts/history/:id/exercises/:exerciseId</td>
+                <td>performedSets, completed</td>
+                <td>Mise à jour de la progression d'un exercice</td>
+            </tr>
+            <tr>
+                <td><span class="method-badge method-post">POST</span></td>
+                <td class="endpoint-path">/workouts/history/:id/finish</td>
+                <td>workoutHistoryId</td>
+                <td>Marquer un workout comme terminé</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="dark-section">
+        <h3>📈 Réponse de l'endpoint /workouts/stats</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">📊 Summary</p>
+                <p>Sessions terminées, exercices complétés, total sets/reps, volume total, durée moyenne</p>
+            </div>
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">🎮 Gamification</p>
+                <p>Points accumulés, niveau actuel, seuil prochain niveau, pourcentage de progression</p>
+            </div>
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">📈 Tendances</p>
+                <p>Comparaison 7 jours glissants vs 7 jours précédents avec indicateurs de progression</p>
+            </div>
+            <div>
+                <p style="color: #CCFF00; font-weight: 600; margin-bottom: 0.5rem;">💪 Top Muscles</p>
+                <p>Classement des muscles les plus travaillés avec score et jours d'entraînement</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 5 — APPLICATION MOBILE
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">05 — Application Mobile</div>
+    <h2 class="section-title">Écrans & Fonctionnalités</h2>
+    <p class="section-subtitle">
+        Application Flutter cross-platform avec design dark premium, navigation par onglets et expérience utilisateur fluide.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-icon icon-volt">🔐</div>
+            <h3>Écran de Connexion</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Email + mot de passe avec validation</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Option « Rester connecté » (refresh token)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Connexion Google Sign-In</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Lien vers mot de passe oublié</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Navigation vers inscription / onboarding</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-green">📊</div>
+            <h3>Dashboard</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Message de bienvenue motivationnel</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Bannière de session active en cours</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Cards de stats (sessions, durée, points, niveau)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Graphique de performance sur 7 jours</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Top muscles travaillés avec scores</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-blue">🏋️</div>
+            <h3>Écran Workout</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Aperçu du workout du jour avant démarrage</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Détails exercices avec images et instructions</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Logging set par set (poids, reps, notes)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Timer de repos ajustable entre les sets</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Vue jour de repos avec mobilité/stretching</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-purple">👤</div>
+            <h3>Profil</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Avatar et informations de base</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Stats fitness (poids, taille, âge)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Préférences workout (split, lieu, niveau)</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Gestion des comptes sociaux liés</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Paramètres : langue, mot de passe, suppression</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-amber">🚀</div>
+            <h3>Onboarding</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Étape 1 :</strong> Nom, âge, genre</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Étape 2 :</strong> Niveau fitness et objectifs</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text"><strong>Étape 3 :</strong> Split, lieu, fréquence</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon icon-rose">🔑</div>
+            <h3>Mot de Passe Oublié</h3>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Envoi de code par email</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Vérification OTP</div></div>
+            <div class="feature-item"><div class="feature-check">✓</div><div class="feature-text">Réinitialisation du mot de passe</div></div>
+        </div>
+    </div>
+
+    <div class="highlight-box mt-2">
+        <h4>🎨 Design System</h4>
+        <p>
+            Thème sombre exclusif avec couleur d'accent <strong style="color: #6B8A00;">Volt (#CCFF00)</strong> — Polices personnalisées via AppTextStyles — Composants réutilisables : GlassDock (navigation glassmorphic), PrimaryButton, ExerciseCard, SimpleAreaChart — Shimmer loading pour les états de chargement.
+        </p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 6 — MOTEUR DE RECOMMANDATION
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">06 — Intelligence</div>
+    <h2 class="section-title">Moteur de Workout Intelligent</h2>
+    <p class="section-subtitle">
+        Algorithme sophistiqué d'attribution et de recommandation des séances d'entraînement basé sur le profil utilisateur.
+    </p>
+    <div class="section-divider"></div>
+
+    <div class="grid-2">
+        <div>
+            <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">Splits Supportés</h3>
+            <div class="card mb-1">
+                <h3>Push / Pull / Legs</h3>
+                <p>Séparation par mouvement — poussée, tirage, jambes. Idéal pour 3-6 jours/semaine.</p>
+            </div>
+            <div class="card mb-1">
+                <h3>Upper / Lower</h3>
+                <p>Alternance haut du corps et bas du corps. Adapté pour 4 jours/semaine.</p>
+            </div>
+            <div class="card mb-1">
+                <h3>Full Body</h3>
+                <p>Entraînement complet à chaque session. Optimal pour 2-3 jours/semaine.</p>
+            </div>
+            <div class="card">
+                <h3>Bro Split</h3>
+                <p>Un groupe musculaire par jour. Pour les pratiquants avancés, 5-6 jours/semaine.</p>
+            </div>
+        </div>
+
+        <div>
+            <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">Logique de Sélection (5 niveaux)</h3>
+            <div class="dark-section" style="margin: 0;">
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #CCFF00; color: #0A0A0A; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 1</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Match strict</span>
+                    </div>
+                    <p>Split + catégorie + niveau + lieu + durée, sans répétition de template récent</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #A3CC00; color: #0A0A0A; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 2</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Ignorer la durée</span>
+                    </div>
+                    <p>Mêmes critères sans contrainte de durée estimée</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #7A9900; color: white; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 3</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Autoriser les répétitions</span>
+                    </div>
+                    <p>Permet de réutiliser des templates déjà assignés récemment</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #526600; color: white; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 4</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Catégorie élargie</span>
+                    </div>
+                    <p>N'importe quel template du split et de la catégorie</p>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="background: #334400; color: #CCFF00; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">TIER 5</span>
+                        <span style="color: #E2E8F0; font-size: 0.8125rem; font-weight: 600;">Fallback</span>
+                    </div>
+                    <p>N'importe quel template non-repos disponible</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Planning d'Entraînement Automatique</h3>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Jours/Semaine</th>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+                <th>Dimanche</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>3 jours</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>4 jours</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>5 jours</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>6 jours</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-no">✗</td>
+            </tr>
+            <tr>
+                <td><strong>7 jours</strong></td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box mt-2">
+        <h4>🎮 Système de Gamification</h4>
+        <p>
+            Les utilisateurs accumulent des <strong>points</strong> basés sur les sessions complétées, le volume total et la régularité. Le système calcule un <strong>niveau</strong> avec un seuil de progression vers le niveau suivant, encourageant l'engagement continu. Les tendances sur 7 jours glissants comparent la performance actuelle avec la semaine précédente.
+        </p>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     PAGE 7 — MATRICE FONCTIONNELLE & DIFFÉRENCIATEURS
+     ════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-label">07 — Fonctionnalités</div>
+    <h2 class="section-title">Matrice Fonctionnelle & Différenciateurs</h2>
+    <p class="section-subtitle">
+        Vue d'ensemble complète des capacités de la plateforme et des éléments qui distinguent Max Muscle Coaching.
+    </p>
+    <div class="section-divider"></div>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;">Matrice des Fonctionnalités</h3>
+
+    <table class="data-table mb-2">
+        <thead>
+            <tr>
+                <th>Fonctionnalité</th>
+                <th>API Backend</th>
+                <th>App Mobile</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Inscription / Connexion</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Multi-méthode (email, Google, Facebook, Apple)</td>
+            </tr>
+            <tr>
+                <td>Renouvellement JWT</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Refresh automatique transparent (access 1min, refresh 90j)</td>
+            </tr>
+            <tr>
+                <td>Profil utilisateur</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Données physiques + préférences d'entraînement</td>
+            </tr>
+            <tr>
+                <td>Recommandation workout</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Algorithme 5 niveaux basé sur les préférences</td>
+            </tr>
+            <tr>
+                <td>Workout du jour</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Attribution automatique quotidienne</td>
+            </tr>
+            <tr>
+                <td>Suivi d'exercices</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Logging set par set avec poids et reps</td>
+            </tr>
+            <tr>
+                <td>Timer de repos</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td>Compte à rebours ajustable côté client</td>
+            </tr>
+            <tr>
+                <td>Statistiques avancées</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Volume, durée, taux de complétion, tendances</td>
+            </tr>
+            <tr>
+                <td>Gamification</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Points, niveaux, progression</td>
+            </tr>
+            <tr>
+                <td>Multi-langue</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td>FR, EN, ES, AR (côté client)</td>
+            </tr>
+            <tr>
+                <td>Notifications push</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Via Firebase Cloud Messaging</td>
+            </tr>
+            <tr>
+                <td>Galerie d'exercices</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Images et vidéos pour chaque exercice</td>
+            </tr>
+            <tr>
+                <td>Vérification email/OTP</td>
+                <td class="check-yes">✓</td>
+                <td class="check-yes">✓</td>
+                <td>Envoi de codes via Nodemailer</td>
+            </tr>
+            <tr>
+                <td>Mode hors ligne</td>
+                <td class="check-no">✗</td>
+                <td class="check-yes">✓</td>
+                <td>Détection de connectivité + écran de retry</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem;">Points Différenciateurs</h3>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-icon icon-volt">🧠</div>
+            <h3>IA de Sélection</h3>
+            <p>Algorithme de fallback à 5 niveaux garantissant toujours un workout adapté, jamais de session vide.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-green">📊</div>
+            <h3>Analytics Complets</h3>
+            <p>Gamification avec points/niveaux, tendances 7 jours, classement des muscles, taux de complétion.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-blue">🔒</div>
+            <h3>Sécurité Robuste</h3>
+            <p>JWT double token (1min/90j), bcrypt, refresh automatique, multi-auth sociale.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-purple">🌍</div>
+            <h3>Multi-langue</h3>
+            <p>4 langues supportées (FR, EN, ES, AR) avec système de traduction GetX intégré.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-amber">📱</div>
+            <h3>Cross-Platform</h3>
+            <p>Flutter unique codebase pour iOS, Android et macOS avec thème dark premium.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon icon-rose">🐳</div>
+            <h3>Docker Ready</h3>
+            <p>Backend containerisé avec Node.js 18 Alpine, prêt pour le déploiement cloud.</p>
+        </div>
+    </div>
+
+    <div class="dark-section mt-2" style="text-align: center;">
+        <h3>🚀 Prêt pour la Production</h3>
+        <p style="max-width: 500px; margin: 0 auto;">
+            Max Muscle Coaching est une plateforme complète, de l'inscription à la gamification, conçue pour accompagner les sportifs dans leur progression quotidienne avec intelligence et précision.
+        </p>
+        <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 2rem;">
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #CCFF00;">Full-Stack</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">Node.js + Flutter</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #CCFF00;">RESTful</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">API Sécurisée JWT</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #CCFF00;">Intelligent</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">Moteur de Recommandation</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
