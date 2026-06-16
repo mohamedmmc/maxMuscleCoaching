@@ -1313,7 +1313,7 @@ class WorkoutService {
 
     let isActive = false;
     if (lastDate) {
-      const today = this._dateOnly(new Date());
+      const today = this._dateOnly();
       const diffDays = Math.round(
         (new Date(today + "T00:00:00") - new Date(lastDate + "T00:00:00")) / 86400000,
       );
