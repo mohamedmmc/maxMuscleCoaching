@@ -25,6 +25,10 @@ dotenv.config();
 
 const app = express();
 
+// Behind Caddy / Nginx / a load balancer — required for express-rate-limit
+// to see real client IPs instead of the proxy address. Default = 1 hop.
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS) || 1);
+
 // Middleware
 app.use(bodyParser.json());
 
