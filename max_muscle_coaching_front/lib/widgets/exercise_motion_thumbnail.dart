@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:max_muscle_coaching_front/theme/app_colors.dart';
@@ -89,10 +90,21 @@ class _ExerciseMotionThumbnailState extends State<ExerciseMotionThumbnail> {
                 : Opacity(
                     key: ValueKey(url),
                     opacity: widget.opacity,
-                    child: Image.network(
-                      url,
-                      fit: widget.fit,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final dpr = MediaQuery.of(context).devicePixelRatio;
+                        return CachedNetworkImage(
+                          imageUrl: url,
+                          fit: widget.fit,
+                          memCacheWidth:
+                              (constraints.maxWidth * dpr).round().clamp(1, 2000),
+                          memCacheHeight:
+                              (constraints.maxHeight * dpr).round().clamp(1, 2000),
+                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                          placeholder: (_, __) => const SizedBox.shrink(),
+                          fadeInDuration: const Duration(milliseconds: 200),
+                        );
+                      },
                     ),
                   ),
           ),

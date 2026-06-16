@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:max_muscle_coaching_front/theme/app_colors.dart';
@@ -136,20 +137,22 @@ class _ExerciseMotionFullscreenViewerState extends State<ExerciseMotionFullscree
                           alignment: Alignment.center,
                           children: [
                             if (primary.isNotEmpty)
-                              Image.network(
-                                primary,
+                              CachedNetworkImage(
+                                imageUrl: primary,
                                 fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                                placeholder: (_, __) => const SizedBox.shrink(),
                               ),
                             if (hasSecond && secondary.isNotEmpty)
                               AnimatedOpacity(
                                 opacity: _showSecond ? 1 : 0,
                                 duration: widget.fadeDuration,
                                 curve: Curves.easeInOut,
-                                child: Image.network(
-                                  secondary,
+                                child: CachedNetworkImage(
+                                  imageUrl: secondary,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                                  placeholder: (_, __) => const SizedBox.shrink(),
                                 ),
                               ),
                           ],
@@ -166,10 +169,11 @@ class _ExerciseMotionFullscreenViewerState extends State<ExerciseMotionFullscree
                           minScale: 1,
                           maxScale: 4,
                           child: Center(
-                            child: Image.network(
-                              url,
+                            child: CachedNetworkImage(
+                              imageUrl: url,
                               fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                              placeholder: (_, __) => const SizedBox.shrink(),
                             ),
                           ),
                         );

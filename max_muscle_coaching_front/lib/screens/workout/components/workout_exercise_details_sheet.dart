@@ -137,10 +137,22 @@ class _ExerciseDetailsSheetState extends State<_ExerciseDetailsSheet> {
                                       initialIndex: idx,
                                     ),
                                   ),
-                                  child: Image.network(
-                                    url,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final dpr = MediaQuery.of(context).devicePixelRatio;
+                                      return CachedNetworkImage(
+                                        imageUrl: url,
+                                        fit: BoxFit.cover,
+                                        memCacheWidth: (constraints.maxWidth * dpr)
+                                            .round()
+                                            .clamp(1, 2000),
+                                        memCacheHeight: (constraints.maxHeight * dpr)
+                                            .round()
+                                            .clamp(1, 2000),
+                                        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                                        placeholder: (_, __) => const SizedBox.shrink(),
+                                      );
+                                    },
                                   ),
                                 );
                               },
