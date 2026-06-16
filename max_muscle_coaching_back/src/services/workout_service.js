@@ -435,11 +435,10 @@ class WorkoutService {
 
     const dateAssigned = this._dateOnly(today);
 
-    let existing = await WorkoutHistory.findOne({
+    const existing = await WorkoutHistory.findOne({
       where: { userId: user.id, dateAssigned },
       include: [{ model: WorkoutTemplate, required: true }],
     });
-    existing = null;
     if (existing) {
       if (existing.completed && !existing.WorkoutTemplate?.isRestDay) {
         return {
@@ -544,15 +543,16 @@ class WorkoutService {
 
     if (!category) {
       const restTemplate = await this._getOrCreateRestDayTemplate();
-      const history = await WorkoutHistory.create({
-        userId: user.id,
-        workoutTemplateId: restTemplate.id,
-        dateAssigned,
-        completed: false,
+      const [history] = await WorkoutHistory.findOrCreate({
+        where: { userId: user.id, dateAssigned },
+        defaults: {
+          workoutTemplateId: restTemplate.id,
+          completed: false,
+        },
       });
       await this._ensureHistoryExercisesFromTemplate(
         history.id,
-        restTemplate.id,
+        history.workoutTemplateId,
       );
 
       return {
@@ -679,15 +679,16 @@ class WorkoutService {
     // If we still can't find a workout, degrade to rest day (never return empty)
     if (!template) {
       const restTemplate = await this._getOrCreateRestDayTemplate();
-      const history = await WorkoutHistory.create({
-        userId: user.id,
-        workoutTemplateId: restTemplate.id,
-        dateAssigned,
-        completed: false,
+      const [history] = await WorkoutHistory.findOrCreate({
+        where: { userId: user.id, dateAssigned },
+        defaults: {
+          workoutTemplateId: restTemplate.id,
+          completed: false,
+        },
       });
       await this._ensureHistoryExercisesFromTemplate(
         history.id,
-        restTemplate.id,
+        history.workoutTemplateId,
       );
       return {
         dateAssigned,
@@ -698,16 +699,23 @@ class WorkoutService {
       };
     }
 
-    const history = await WorkoutHistory.create({
-      userId: user.id,
-      workoutTemplateId: template.id,
-      dateAssigned,
-      completed: false,
+    const [history] = await WorkoutHistory.findOrCreate({
+      where: { userId: user.id, dateAssigned },
+      defaults: {
+        workoutTemplateId: template.id,
+        completed: false,
+      },
     });
 
-    await this._ensureHistoryExercisesFromTemplate(history.id, template.id);
+    await this._ensureHistoryExercisesFromTemplate(
+      history.id,
+      history.workoutTemplateId,
+    );
 
-    const hydrated = await WorkoutTemplate.findByPk(template.id, {
+    // Hydrate the template actually pinned to this session (handles the race
+    // case where findOrCreate returned a row created by a concurrent request
+    // with a different template).
+    const hydrated = await WorkoutTemplate.findByPk(history.workoutTemplateId, {
       include: [
         {
           model: Exercise,

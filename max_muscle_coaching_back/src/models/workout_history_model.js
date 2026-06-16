@@ -36,6 +36,14 @@ const WorkoutHistory = sequelize.define("WorkoutHistory", {
     allowNull: false,
     defaultValue: false,
   },
+}, {
+  indexes: [
+    {
+      unique: true,
+      fields: ["userId", "dateAssigned"],
+      name: "workout_history_user_date_unique",
+    },
+  ],
 });
 
 // Define associations
