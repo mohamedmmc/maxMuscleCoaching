@@ -99,7 +99,7 @@ function roleAuth(roles) {
       return res.status(403).json({ message: "missing_credentials" });
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.scope("withSecrets").findOne({ where: { email } });
     if (!user) {
       return res.status(404).json({ message: "client_not_found" });
     }

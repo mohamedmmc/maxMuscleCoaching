@@ -68,6 +68,7 @@ exports.signIn = async (req, res) => {
       googleId,
       facebookId,
       appleId,
+      { includeSecrets: true },
     );
     if (!user) {
       return res.status(404).json({ message: "client_not_found" });
@@ -369,13 +370,12 @@ exports.signUp = async (req, res) => {
 exports.profile = async (req, res) => {
   try {
     const clientId = req.decoded.id;
-    let clientFound = await User.findByPk(clientId);
+    const clientFound = await User.findByPk(clientId);
     if (!clientFound) {
       return res.status(404).json({ message: "client_not_found" });
     }
 
-    delete clientFound.password;
-    // Return token
+    // Default scope + toJSON override strip password/social IDs.
     return res.status(200).json({ clientFound });
   } catch (error) {
     logger.error({ err: error, path: req.route.path }, "user controller error");
@@ -1133,6 +1133,7 @@ const checkUserExists = async (
   googleId,
   facebookId,
   appleId,
+  { includeSecrets = false } = {},
 ) => {
   try {
     let whereClause = {};
@@ -1168,7 +1169,8 @@ const checkUserExists = async (
       whereClause = roleCondition || {};
     }
 
-    const user = await User.findOne({ where: whereClause });
+    const finder = includeSecrets ? User.scope("withSecrets") : User;
+    const user = await finder.findOne({ where: whereClause });
 
     return user ? user : null;
   } catch (error) {

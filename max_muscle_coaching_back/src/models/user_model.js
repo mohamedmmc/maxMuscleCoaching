@@ -8,6 +8,8 @@
  */
 const { sequelize, Sequelize } = require("../config/db.config"); // Adjust the path as needed
 
+const SENSITIVE_USER_FIELDS = ["password", "googleId", "facebookId", "appleId"];
+
 const User = sequelize.define("User", {
   name: {
     type: Sequelize.STRING,
@@ -112,7 +114,23 @@ const User = sequelize.define("User", {
     type: Sequelize.DATEONLY,
     allowNull: true,
   },
+}, {
+  defaultScope: {
+    attributes: { exclude: SENSITIVE_USER_FIELDS },
+  },
+  scopes: {
+    // Use only for auth flows that must compare/read sensitive fields.
+    withSecrets: {},
+  },
 });
+
+// Defense in depth: never serialize sensitive fields, regardless of how the
+// instance was fetched.
+User.prototype.toJSON = function () {
+  const v = { ...this.get() };
+  for (const f of SENSITIVE_USER_FIELDS) delete v[f];
+  return v;
+};
 
 // Define associations
 User.associate = () => {
