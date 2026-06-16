@@ -1,0 +1,33 @@
+# Never bake secrets into image layers.
+.env
+.env.*
+!.env.example
+
+# VCS, editor, OS junk
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+**/.DS_Store
+
+# Build artifacts and dependencies that the image will rebuild itself
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+logs
+
+# Test + docs that don't ship to the runtime
+test
+docs
+README.md
+SECURITY.md
+Dockerfile
+.dockerignore
+
+# Anything user-uploaded at runtime should live on a mounted volume
+public/pdf
+public/images/client
