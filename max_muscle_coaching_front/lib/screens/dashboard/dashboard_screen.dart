@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
+import 'package:max_muscle_coaching_front/models/dto/bodyweight_entry.dart';
+import 'package:max_muscle_coaching_front/models/dto/workout_api_models.dart';
 import 'package:max_muscle_coaching_front/models/models.dart';
 import 'package:max_muscle_coaching_front/theme/app_colors.dart';
 import 'package:max_muscle_coaching_front/theme/app_text_styles.dart';
 import 'package:max_muscle_coaching_front/widgets/glass_dock.dart';
+import 'package:max_muscle_coaching_front/widgets/primary_button.dart';
 import 'package:max_muscle_coaching_front/widgets/simple_area_chart.dart';
 
 import 'dashboard_controller.dart';
@@ -14,6 +17,10 @@ part 'components/active_session_banner.dart';
 part 'components/hero_card.dart';
 part 'components/stat_card.dart';
 part 'components/chart_card.dart';
+part 'components/streak_card.dart';
+part 'components/personal_records_card.dart';
+part 'components/bodyweight_card.dart';
+part 'components/log_bodyweight_sheet.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({required this.onResumeSession, super.key});
@@ -139,6 +146,11 @@ class DashboardScreen extends StatelessWidget {
                     ],
                     _HeroCard(totalVolume: totalVolume),
                     const SizedBox(height: 16),
+                    _StreakCard(
+                      current: stats?.streak?.current ?? 0,
+                      longest: stats?.streak?.longest ?? 0,
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -206,6 +218,17 @@ class DashboardScreen extends StatelessWidget {
                       points: apiChartPoints ?? chartPoints,
                     ),
                     const SizedBox(height: 16),
+                    _BodyweightCard(
+                      history: dashboard.bodyweightHistory,
+                      onLogPressed: () => _openLogBodyweight(context, dashboard),
+                    ),
+                    const SizedBox(height: 16),
+                    if ((stats?.personalRecords ?? const []).isNotEmpty) ...[
+                      _PersonalRecordsCard(
+                        records: stats!.personalRecords,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if ((stats?.topMuscles ?? const []).isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.all(18),
@@ -299,6 +322,17 @@ class DashboardScreen extends StatelessWidget {
       },
     );
   }
+}
+
+void _openLogBodyweight(BuildContext context, DashboardController dashboard) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _LogBodyweightSheet(
+      onSubmit: dashboard.logBodyweight,
+    ),
+  );
 }
 
 List<String> _categoriesFromLogs(List<WorkoutSessionLog> logs) {

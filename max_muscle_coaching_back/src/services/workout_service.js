@@ -19,6 +19,8 @@ const Muscle = require("../models/muscle_model");
 const ExerciseMuscle = require("../models/exercise_muscle_model");
 const Instruction = require("../models/instruction_model");
 const Gallery = require("../models/gallery_model");
+const User = require("../models/user_model");
+const logger = require("../helper/logger");
 const fs = require("fs");
 const path = require("path");
 const { Op } = require("sequelize");
@@ -104,6 +106,10 @@ class WorkoutService {
   }
 
   _dateOnly(date = new Date()) {
+    if (typeof date === "string") {
+      // Already a YYYY-MM-DD (Sequelize DATEONLY returns strings) — slice & return.
+      return date.length >= 10 ? date.slice(0, 10) : date;
+    }
     return date.toISOString().slice(0, 10);
   }
 
@@ -225,12 +231,17 @@ class WorkoutService {
     }
   }
 
-  _pickCategoryForToday({ split, daysPerWeek, dayIndex }) {
+  _pickCategoryForToday({ split, daysPerWeek, dayIndex, isFirstSession = false }) {
     const trainingDays = this._trainingDaysForDaysPerWeek(daysPerWeek);
-    if (!trainingDays.includes(dayIndex)) return null; // rest day
+    const categories = this._categoriesForSplit(split);
+
+    if (!trainingDays.includes(dayIndex)) {
+      // First session must never be a rest day — kick off with the first training day's category.
+      if (isFirstSession) return categories[0];
+      return null;
+    }
 
     const idxInTraining = trainingDays.indexOf(dayIndex);
-    const categories = this._categoriesForSplit(split);
     return categories[idxInTraining % categories.length] || categories[0];
   }
 
@@ -265,13 +276,64 @@ class WorkoutService {
     // Once a workout history is marked completed (manual finish or auto-complete),
     // do not unset it back to false if the user later edits exercise completion.
     if (stats.allCompleted) {
-      await WorkoutHistory.update(
+      const [updatedCount] = await WorkoutHistory.update(
         { completed: true },
         { where: { id: workoutHistoryId, completed: false } },
       );
+      if (updatedCount > 0) {
+        const history = await WorkoutHistory.findByPk(workoutHistoryId, {
+          attributes: ["userId", "dateAssigned"],
+        });
+        if (history) {
+          await this._updateUserStreak(history.userId, history.dateAssigned);
+        }
+      }
     }
 
     return stats;
+  }
+
+  /**
+   * Updates the user's streak when a workout completes.
+   *
+   * - Same calendar day as last completion: no change.
+   * - Exactly +1 day vs last completion: streak += 1.
+   * - Gap > 1 day: streak resets to 1.
+   * - Earlier than last completion (back-fill): no change.
+   *
+   * `longestStreak` is monotonically non-decreasing.
+   */
+  async _updateUserStreak(userId, completionDate) {
+    const completionDateOnly = this._dateOnly(completionDate);
+    const user = await User.findByPk(userId);
+    if (!user) return;
+
+    const lastDate = user.lastWorkoutDate
+      ? this._dateOnly(user.lastWorkoutDate)
+      : null;
+
+    if (lastDate === completionDateOnly) return;
+
+    let newCurrent;
+    if (!lastDate) {
+      newCurrent = 1;
+    } else {
+      const diffDays = Math.round(
+        (new Date(completionDateOnly + "T00:00:00") -
+          new Date(lastDate + "T00:00:00")) /
+          86400000,
+      );
+      if (diffDays === 1) newCurrent = (user.currentStreak || 0) + 1;
+      else if (diffDays > 1) newCurrent = 1;
+      else return; // back-filling a past workout — leave streak alone
+    }
+
+    const newLongest = Math.max(user.longestStreak || 0, newCurrent);
+    await user.update({
+      currentStreak: newCurrent,
+      longestStreak: newLongest,
+      lastWorkoutDate: completionDateOnly,
+    });
   }
 
   /**
@@ -467,11 +529,17 @@ class WorkoutService {
     const fitnessLevel = this._normalizeFitnessLevel(user.fitnessLevel);
     const location = this._normalizeLocation(user.location);
 
+    const priorHistoryCount = await WorkoutHistory.count({
+      where: { userId: user.id },
+    });
+    const isFirstSession = priorHistoryCount === 0;
+
     const dayIndex = today.getDay();
     const category = this._pickCategoryForToday({
       split,
       daysPerWeek: user.daysPerWeek,
       dayIndex,
+      isFirstSession,
     });
 
     if (!category) {
@@ -1065,7 +1133,7 @@ class WorkoutService {
         ? summarizeWindow(previous7Start, previous7End)
         : { sessions: 0, volume: 0, avgCompletionRate: null };
 
-    const [allTimeSessionsTotal, allTimeSessionsFinished, allTimeWorkoutsFinished, allTimeRestDaysFinished] =
+    const [allTimeSessionsTotal, allTimeSessionsFinished, allTimeWorkoutsFinished, allTimeRestDaysFinished, freshUser] =
       await Promise.all([
         WorkoutHistory.count({ where: { userId: user.id } }),
         WorkoutHistory.count({ where: { userId: user.id, completed: true } }),
@@ -1077,7 +1145,13 @@ class WorkoutService {
           where: { userId: user.id, completed: true },
           include: [{ model: WorkoutTemplate, required: true, where: { isRestDay: true } }],
         }),
+        User.findByPk(user.id, {
+          attributes: ["currentStreak", "longestStreak", "lastWorkoutDate"],
+        }),
       ]);
+
+    const streak = this._computeStreakView(freshUser);
+    const personalRecords = await this.getPersonalRecordsForUser(user.id, { limit: 5 });
 
     const allTimePoints = allTimeWorkoutsFinished * 100 + allTimeRestDaysFinished * 25;
     const allTimeLevel = levelFromPoints(allTimePoints);
@@ -1132,8 +1206,118 @@ class WorkoutService {
           volume: rolling7.volume - previous7.volume,
         },
       },
+      streak,
+      personalRecords,
       topMuscles,
       byDay,
+    };
+  }
+
+  /**
+   * Returns the user's top personal records (heaviest weight ever lifted per exercise).
+   *
+   * Only counts sets logged in completed workout histories where weight > 0 and reps > 0
+   * (skips bodyweight exercises with no tracked weight).
+   *
+   * Each entry: `{ exerciseId, name, weight, reps, dateAchieved }`.
+   */
+  async getPersonalRecordsForUser(userId, { limit = 5 } = {}) {
+    const histories = await WorkoutHistory.findAll({
+      where: { userId, completed: true },
+      attributes: ["id", "dateAssigned"],
+      raw: true,
+    });
+    if (!histories.length) return [];
+
+    const historyIds = histories.map((h) => h.id);
+    const dateById = new Map(
+      histories.map((h) => [h.id, this._dateOnly(h.dateAssigned)]),
+    );
+
+    const progress = await WorkoutHistoryExercise.findAll({
+      where: { workoutHistoryId: { [Op.in]: historyIds } },
+      attributes: ["exerciseId", "workoutHistoryId", "performedSets"],
+      include: [
+        {
+          model: Exercise,
+          attributes: ["id", "name"],
+          required: true,
+        },
+      ],
+    });
+
+    const parseSets = (raw) => {
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const prByExerciseId = new Map();
+    for (const row of progress) {
+      const sets = parseSets(row.performedSets);
+      for (const set of sets) {
+        const weight = Number(set?.weight);
+        const reps = Number(set?.reps);
+        if (!Number.isFinite(weight) || weight <= 0) continue;
+        if (!Number.isFinite(reps) || reps <= 0) continue;
+
+        const existing = prByExerciseId.get(row.exerciseId);
+        if (!existing || weight > existing.weight) {
+          prByExerciseId.set(row.exerciseId, {
+            exerciseId: row.exerciseId,
+            name: row.Exercise?.name || `Exercise ${row.exerciseId}`,
+            weight,
+            reps,
+            dateAchieved: dateById.get(row.workoutHistoryId) || null,
+          });
+        }
+      }
+    }
+
+    return Array.from(prByExerciseId.values())
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, Math.max(1, Number(limit) || 5));
+  }
+
+  /**
+   * Returns a frontend-friendly view of the user's streak:
+   * - `current`: live streak (0 if user hasn't completed a workout today or yesterday)
+   * - `stored`: raw value from User row (useful for debugging / "you broke a 12-day streak")
+   * - `longest`: all-time longest
+   * - `lastWorkoutDate`: ISO date or null
+   * - `isActive`: whether the streak is still alive
+   */
+  _computeStreakView(userRow) {
+    if (!userRow) return { current: 0, stored: 0, longest: 0, lastWorkoutDate: null, isActive: false };
+
+    const stored = Number(userRow.currentStreak) || 0;
+    const longest = Number(userRow.longestStreak) || 0;
+    const lastDate = userRow.lastWorkoutDate
+      ? this._dateOnly(userRow.lastWorkoutDate)
+      : null;
+
+    let isActive = false;
+    if (lastDate) {
+      const today = this._dateOnly(new Date());
+      const diffDays = Math.round(
+        (new Date(today + "T00:00:00") - new Date(lastDate + "T00:00:00")) / 86400000,
+      );
+      isActive = diffDays <= 1;
+    }
+
+    return {
+      current: isActive ? stored : 0,
+      stored,
+      longest,
+      lastWorkoutDate: lastDate,
+      isActive,
     };
   }
 
@@ -1234,7 +1418,15 @@ class WorkoutService {
     );
 
     await history.update({ completed: true });
-    return { status: "ok", data: history.toJSON() };
+    await this._updateUserStreak(user.id, history.dateAssigned);
+    const freshUser = await User.findByPk(user.id, {
+      attributes: ["currentStreak", "longestStreak", "lastWorkoutDate"],
+    });
+    return {
+      status: "ok",
+      data: history.toJSON(),
+      streak: this._computeStreakView(freshUser),
+    };
   }
 
   async updateWorkoutHistoryExerciseForUser(
@@ -1359,13 +1551,11 @@ class WorkoutService {
           if (!existingExercise) {
             // Save new exercise to the database
             savedExercise = await Exercise.create(exercise);
-            console.log(`Exercise "${exerciseData.name}" saved successfully.`);
+            logger.info({ exercise: exerciseData.name }, "exercise seeded");
           } else {
             // Exercise exists, keep it up-to-date (idempotent seed)
             savedExercise = await existingExercise.update(exercise);
-            console.log(
-              `Exercise "${exerciseData.name}" updated successfully.`,
-            );
+            logger.info({ exercise: exerciseData.name }, "exercise updated");
           }
 
           const primaryMuscleNames = Array.isArray(exerciseData.primaryMuscles)
@@ -1456,7 +1646,7 @@ class WorkoutService {
           // You can implement logic to check for videos here when you're ready
         } catch (err) {
           errorCount += 1;
-          console.error(`Error saving exercise "${exerciseData.name}": `, err);
+          logger.error({ err, exercise: exerciseData.name }, "failed to save exercise");
         }
       }
     }

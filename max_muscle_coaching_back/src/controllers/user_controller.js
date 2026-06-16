@@ -5,6 +5,7 @@
  * Detailed endpoint docs: `docs/API.md`
  */
 const User = require("../models/user_model.js");
+const logger = require("../helper/logger");
 
 const { VerificationCode } = require("../models/verification_code.js");
 const { Op } = require("sequelize");
@@ -33,8 +34,7 @@ exports.renewJWT = async (req, res) => {
 
     return res.status(200).json({ token, refreshToken });
   } catch (error) {
-    console.log(`Error at ${req.route.path}`);
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error, path: req.route.path }, "user controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -117,8 +117,7 @@ exports.signIn = async (req, res) => {
 
     return res.status(200).json({ token, refreshToken });
   } catch (error) {
-    console.log(`Error at ${req.route.path}`);
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error, path: req.route.path }, "user controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -204,7 +203,7 @@ exports.signUp = async (req, res) => {
           await saveImage(pictureName, name, "images/client");
           newPicture = pictureName;
         } catch (error) {
-          console.error("Error downloading image:", error);
+          logger.error({ err: error }, "error downloading user picture");
         }
       }
       response = await User.create({
@@ -356,8 +355,7 @@ exports.signUp = async (req, res) => {
     // Return token
     return res.status(200).json({ token });
   } catch (error) {
-    console.log(`Error at ${req.route.path}`);
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error, path: req.route.path }, "user controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -380,8 +378,7 @@ exports.profile = async (req, res) => {
     // Return token
     return res.status(200).json({ clientFound });
   } catch (error) {
-    console.log(`Error at ${req.route.path}`);
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error, path: req.route.path }, "user controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -1175,8 +1172,7 @@ const checkUserExists = async (
 
     return user ? user : null;
   } catch (error) {
-    console.error(`Error in checkUserExists function`);
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "checkUserExists failed");
     return null;
   }
 };

@@ -5,6 +5,7 @@ import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
 import 'package:max_muscle_coaching_front/networking/logger_service.dart';
 import 'package:max_muscle_coaching_front/repository/user_repository.dart';
 import 'package:max_muscle_coaching_front/repository/workout_repository.dart';
+import 'package:max_muscle_coaching_front/services/secure_token_storage.dart';
 import 'package:max_muscle_coaching_front/services/shared_preferences.dart';
 
 import 'app.dart';
@@ -14,6 +15,8 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   Get.put(SharedPreferencesService(), permanent: true);
+  Get.put(SecureTokenStorage(), permanent: true);
+  await SecureTokenStorage.find.init();
   Get.put(LoggerService(), permanent: true);
   Get.put(UserRepository(), permanent: true);
   Get.put(WorkoutRepository(), permanent: true);

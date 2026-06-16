@@ -6,6 +6,7 @@
  */
 const WorkoutService = require("../services/workout_service");
 const User = require("../models/user_model");
+const logger = require("../helper/logger");
 
 const workoutService = new WorkoutService();
 
@@ -23,7 +24,7 @@ exports.recommended = async (req, res) => {
     const templates = await workoutService.getRecommendedTemplatesForUser(user);
     return res.status(200).json({ userId: user.id, templates });
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -77,7 +78,7 @@ exports.stats = async (req, res) => {
 
     return res.status(200).json({ userId: user.id, ...stats });
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -96,7 +97,7 @@ exports.today = async (req, res) => {
     const workout = await workoutService.getTodayWorkoutForUser(user);
     return res.status(200).json(workout);
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -119,7 +120,7 @@ exports.history = async (req, res) => {
 
     return res.status(200).json({ userId: user.id, histories });
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -147,7 +148,7 @@ exports.historyDetail = async (req, res) => {
 
     return res.status(200).json({ userId: user.id, ...detail });
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -189,7 +190,7 @@ exports.updateExerciseProgress = async (req, res) => {
 
     return res.status(200).json({ userId: user.id, progress: result.data });
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };
@@ -229,9 +230,10 @@ exports.finishWorkout = async (req, res) => {
       userId: user.id,
       workoutHistoryId,
       completed: true,
+      streak: result.streak,
     });
   } catch (error) {
-    console.error("\x1b[31m%s\x1b[0m", error);
+    logger.error({ err: error }, "workout controller error");
     return res.status(500).json({ message: error.message });
   }
 };

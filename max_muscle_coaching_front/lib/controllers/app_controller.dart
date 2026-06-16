@@ -4,6 +4,7 @@ import 'package:max_muscle_coaching_front/models/user_model.dart';
 import 'package:max_muscle_coaching_front/models/workout_models.dart';
 import 'package:max_muscle_coaching_front/repository/user_repository.dart';
 import 'package:max_muscle_coaching_front/services/connectivity_service.dart';
+import 'package:max_muscle_coaching_front/services/secure_token_storage.dart';
 import 'package:max_muscle_coaching_front/services/shared_preferences.dart';
 import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
 import 'package:max_muscle_coaching_front/storage/shared_preferences_keys.dart';
@@ -18,17 +19,17 @@ class AppController extends GetxController {
   ActiveWorkoutSession? activeSession;
 
   Future<String?> _renewJwtIfPossible() async {
-    final refreshToken = SharedPreferencesService.find.get(refreshTokenKey);
+    final refreshToken = SecureTokenStorage.find.refreshToken;
     if (refreshToken == null || refreshToken.isEmpty) return null;
 
     final loginDTO = await UserRepository.find.renewJWT(token: {refreshTokenKey: refreshToken});
     final jwt = loginDTO?.token;
     if (jwt == null || jwt.isEmpty) return null;
 
-    SharedPreferencesService.find.add(jwtKey, jwt);
+    await SecureTokenStorage.find.setJwt(jwt);
     final newRefreshToken = loginDTO?.refreshToken;
     if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
-      SharedPreferencesService.find.add(refreshTokenKey, newRefreshToken);
+      await SecureTokenStorage.find.setRefreshToken(newRefreshToken);
     }
     return jwt;
   }
@@ -46,14 +47,13 @@ class AppController extends GetxController {
       await Future<void>.delayed(const Duration(milliseconds: 120));
     }
 
-    final jwt = SharedPreferencesService.find.get(jwtKey);
+    final jwt = SecureTokenStorage.find.jwt;
     if (jwt != null) {
       String? activeJwt = jwt;
       if (JwtDecoder.isExpired(jwt)) {
         activeJwt = await _renewJwtIfPossible();
         if (activeJwt == null) {
-          SharedPreferencesService.find.removeKey(jwtKey);
-          SharedPreferencesService.find.removeKey(refreshTokenKey);
+          await SecureTokenStorage.find.clear();
         }
       }
 
@@ -83,7 +83,7 @@ class AppController extends GetxController {
 
     update();
 
-    final jwt = SharedPreferencesService.find.get(jwtKey);
+    final jwt = SecureTokenStorage.find.jwt;
     if (jwt != null) {
       String? activeJwt = jwt;
       if (JwtDecoder.isExpired(jwt)) {
@@ -104,11 +104,9 @@ class AppController extends GetxController {
   }
 
   Future<void> setJwt(String jwt, {String? refreshToken, bool stayLoggedIn = false}) async {
-    SharedPreferencesService.find.add(jwtKey, jwt);
+    await SecureTokenStorage.find.setJwt(jwt);
     if (stayLoggedIn && refreshToken != null && refreshToken.isNotEmpty) {
-      SharedPreferencesService.find.add(refreshTokenKey, refreshToken);
-    } else {
-      SharedPreferencesService.find.removeKey(refreshTokenKey);
+      await SecureTokenStorage.find.setRefreshToken(refreshToken);
     }
     user = User.fromToken(JwtDecoder.decode(jwt));
     update();
@@ -137,8 +135,7 @@ class AppController extends GetxController {
   }
 
   Future<void> logout() async {
-    SharedPreferencesService.find.removeKey(jwtKey);
-    SharedPreferencesService.find.removeKey(refreshTokenKey);
+    await SecureTokenStorage.find.clear();
 
     logs = const [];
     activeSession = null;

@@ -3,6 +3,9 @@ caddy-config
 caddy-data
 .env
 
+# macOS junk (anywhere in the tree)
+**/.DS_Store
+
 
 max_muscle_coaching_back/node_modules
 max_muscle_coaching_back/.env

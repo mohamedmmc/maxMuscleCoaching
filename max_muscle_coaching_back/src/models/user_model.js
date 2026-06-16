@@ -98,6 +98,20 @@ const User = sequelize.define("User", {
     allowNull: true,
     defaultValue: "Gym",
   },
+  currentStreak: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
+  longestStreak: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
+  lastWorkoutDate: {
+    type: Sequelize.DATEONLY,
+    allowNull: true,
+  },
 });
 
 // Define associations

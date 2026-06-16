@@ -9,6 +9,7 @@ import 'package:max_muscle_coaching_front/models/user_model.dart';
 import 'package:max_muscle_coaching_front/repository/user_repository.dart';
 import 'package:max_muscle_coaching_front/storage/shared_preferences_keys.dart';
 
+import 'secure_token_storage.dart';
 import 'shared_preferences.dart';
 
 enum ForgotPasswordStep { sendEmail, changePassword }
@@ -62,7 +63,7 @@ class AuthenticationService extends GetxController {
   bool get isUserLoggedIn => isReady ? _jwtClientData != null : false;
 
   User? get jwtClientData {
-    String? savedToken = SharedPreferencesService.find.get(jwtKey);
+    String? savedToken = SecureTokenStorage.find.jwt;
     if (isUserLoggedIn && _jwtClientData == null && savedToken != null) {
       _jwtClientData = User.fromToken(JWT.decode(savedToken).payload);
     }
@@ -112,7 +113,7 @@ class AuthenticationService extends GetxController {
 
   AuthenticationService() {
     Helper.waitAndExecute(() => SharedPreferencesService.find.isReady, () async {
-      final savedToken = SharedPreferencesService.find.get(jwtKey);
+      final savedToken = SecureTokenStorage.find.jwt;
       // await UserRepository.find.checkFCM(userID: savedToken != null ? JWT.decode(savedToken).payload['id'] : null);
       if (savedToken != null) {
         final jwtPayload = JWT.decode(savedToken).payload;
@@ -144,12 +145,12 @@ class AuthenticationService extends GetxController {
   }
 
   Future<void> renewToken() async {
-    final savedRefreshToken = SharedPreferencesService.find.get(refreshTokenKey);
+    final savedRefreshToken = SecureTokenStorage.find.refreshToken;
     if (savedRefreshToken != null) {
       final Map<String, dynamic> refreshToken = {refreshTokenKey: savedRefreshToken};
       final loginDTO = await UserRepository.find.renewJWT(token: refreshToken);
       if (loginDTO?.refreshToken != null) {
-        SharedPreferencesService.find.add(refreshTokenKey, loginDTO!.refreshToken!);
+        await SecureTokenStorage.find.setRefreshToken(loginDTO!.refreshToken!);
         try {
           final jwtPayload = JWT.decode(loginDTO.token ?? '').payload;
           _jwtClientData = User.fromToken(jwtPayload);
@@ -159,7 +160,7 @@ class AuthenticationService extends GetxController {
         initiateCurrentUser(loginDTO.token);
       }
     } else {
-      SharedPreferencesService.find.removeKey(jwtKey);
+      await SecureTokenStorage.find.clear();
     }
   }
 
@@ -243,8 +244,7 @@ class AuthenticationService extends GetxController {
     // }
     // if (_auth.currentUser != null) await _googleLogout();
     // if (isFacebookLoggedIn) await _facebookLogout();
-    SharedPreferencesService.find.removeKey(jwtKey);
-    SharedPreferencesService.find.removeKey(refreshTokenKey);
+    await SecureTokenStorage.find.clear();
 
     _jwtClientData = null;
 
@@ -356,7 +356,7 @@ class AuthenticationService extends GetxController {
     isLoggingIn = false;
     if (loginResponse?.token != null) {
       if (loginResponse?.refreshToken != null) {
-        SharedPreferencesService.find.add(refreshTokenKey, loginResponse!.refreshToken!);
+        await SecureTokenStorage.find.setRefreshToken(loginResponse!.refreshToken!);
       }
       initiateCurrentUser(loginResponse?.token, user: user, refresh: true);
     }
@@ -390,7 +390,7 @@ class AuthenticationService extends GetxController {
       isUserVerified = jwtPayload['isVerified'];
       // Only login verified users
       if ((isUserVerified ?? false) && !isTokenExpired) {
-        SharedPreferencesService.find.add(jwtKey, jwt);
+        SecureTokenStorage.find.setJwt(jwt);
         _jwtClientData ??= user ?? User.fromToken(jwtPayload);
 
         jwtClientData?.id = User.fromToken(jwtPayload).id;

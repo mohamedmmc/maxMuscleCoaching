@@ -5,6 +5,8 @@ class WorkoutStatsResponse {
     this.summary,
     this.gamification,
     this.allTime,
+    this.streak,
+    this.personalRecords = const <WorkoutPersonalRecord>[],
     this.topMuscles = const <WorkoutStatsMuscle>[],
     this.byDay = const <WorkoutStatsByDay>[],
   });
@@ -14,6 +16,8 @@ class WorkoutStatsResponse {
   final WorkoutStatsSummary? summary;
   final WorkoutStatsGamification? gamification;
   final WorkoutStatsAllTime? allTime;
+  final WorkoutStatsStreak? streak;
+  final List<WorkoutPersonalRecord> personalRecords;
   final List<WorkoutStatsMuscle> topMuscles;
   final List<WorkoutStatsByDay> byDay;
 
@@ -34,6 +38,15 @@ class WorkoutStatsResponse {
             .toList(growable: false)
         : const <WorkoutStatsByDay>[];
 
+    final rawPRs = json['personalRecords'];
+    final personalRecords = (rawPRs is List)
+        ? rawPRs
+            .whereType<Map>()
+            .map((e) =>
+                WorkoutPersonalRecord.fromJson(e.cast<String, dynamic>()))
+            .toList(growable: false)
+        : const <WorkoutPersonalRecord>[];
+
     return WorkoutStatsResponse(
       userId: (json['userId'] as num?)?.toInt(),
       range: json['range'] is Map
@@ -52,6 +65,11 @@ class WorkoutStatsResponse {
           ? WorkoutStatsAllTime.fromJson(
               (json['allTime'] as Map).cast<String, dynamic>())
           : null,
+      streak: json['streak'] is Map
+          ? WorkoutStatsStreak.fromJson(
+              (json['streak'] as Map).cast<String, dynamic>())
+          : null,
+      personalRecords: personalRecords,
       topMuscles: topMuscles,
       byDay: byDay,
     );
@@ -63,8 +81,74 @@ class WorkoutStatsResponse {
         if (summary != null) 'summary': summary!.toJson(),
         if (gamification != null) 'gamification': gamification!.toJson(),
         if (allTime != null) 'allTime': allTime!.toJson(),
+        if (streak != null) 'streak': streak!.toJson(),
+        'personalRecords':
+            personalRecords.map((p) => p.toJson()).toList(growable: false),
         'topMuscles': topMuscles.map((m) => m.toJson()).toList(growable: false),
         'byDay': byDay.map((d) => d.toJson()).toList(growable: false),
+      };
+}
+
+class WorkoutPersonalRecord {
+  const WorkoutPersonalRecord({
+    required this.exerciseId,
+    required this.name,
+    required this.weight,
+    required this.reps,
+    this.dateAchieved,
+  });
+
+  final int exerciseId;
+  final String name;
+  final double weight;
+  final int reps;
+  final String? dateAchieved;
+
+  factory WorkoutPersonalRecord.fromJson(Map<String, dynamic> json) =>
+      WorkoutPersonalRecord(
+        exerciseId: (json['exerciseId'] as num?)?.toInt() ?? 0,
+        name: json['name']?.toString() ?? '',
+        weight: (json['weight'] as num?)?.toDouble() ?? 0,
+        reps: (json['reps'] as num?)?.toInt() ?? 0,
+        dateAchieved: json['dateAchieved']?.toString(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'exerciseId': exerciseId,
+        'name': name,
+        'weight': weight,
+        'reps': reps,
+        if (dateAchieved != null) 'dateAchieved': dateAchieved,
+      };
+}
+
+class WorkoutStatsStreak {
+  const WorkoutStatsStreak({
+    required this.current,
+    required this.longest,
+    required this.isActive,
+    this.lastWorkoutDate,
+  });
+
+  final int current;
+  final int longest;
+  final bool isActive;
+  final String? lastWorkoutDate;
+
+  factory WorkoutStatsStreak.fromJson(Map<String, dynamic> json) {
+    return WorkoutStatsStreak(
+      current: (json['current'] as num?)?.toInt() ?? 0,
+      longest: (json['longest'] as num?)?.toInt() ?? 0,
+      isActive: json['isActive'] == true,
+      lastWorkoutDate: json['lastWorkoutDate']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'current': current,
+        'longest': longest,
+        'isActive': isActive,
+        if (lastWorkoutDate != null) 'lastWorkoutDate': lastWorkoutDate,
       };
 }
 

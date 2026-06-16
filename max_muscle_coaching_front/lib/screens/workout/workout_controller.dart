@@ -20,6 +20,7 @@ class WorkoutController extends GetxController {
   bool workoutAlreadyDone = false;
   String? emptyStateMessage;
   String? finishErrorMessage;
+  FinishWorkoutStreak? lastFinishStreak;
   int? startTimeMs;
   List<ExerciseLog> exerciseLogs = const [];
   int? _workoutHistoryId;
@@ -301,6 +302,8 @@ class WorkoutController extends GetxController {
         workoutAlreadyDone = true;
         emptyStateMessage = 'Workout already completed today.';
       }
+
+      lastFinishStreak = response.streak;
 
       await AppController.find.clearActiveSession();
       active = false;

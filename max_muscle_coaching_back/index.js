@@ -15,6 +15,7 @@ const { green, yellow } = require("./src/helper/colors");
 const { getFullDate } = require("./src/helper/time");
 const { sequelize } = require("./src/config/db.config");
 const { syncDatabase } = require("./src/config/db_sync");
+const logger = require("./src/helper/logger");
 dotenv.config();
 
 // PORT
@@ -33,6 +34,7 @@ async function startServer() {
   const WorkoutTemplateExercise = require("./src/models/workout_template_exercise_model");
   const WorkoutHistory = require("./src/models/workout_history_model");
   const WorkoutHistoryExercise = require("./src/models/workout_history_exercise_model");
+  const BodyweightEntry = require("./src/models/bodyweight_entry_model");
 
   // Set up all model associations after models are loaded
   if (User.associate) User.associate();
@@ -43,28 +45,28 @@ async function startServer() {
   if (WorkoutTemplateExercise.associate) WorkoutTemplateExercise.associate();
   if (WorkoutHistory.associate) WorkoutHistory.associate();
   if (WorkoutHistoryExercise.associate) WorkoutHistoryExercise.associate();
+  if (BodyweightEntry.associate) BodyweightEntry.associate();
 
   const { dropped } = await syncDatabase(sequelize);
   if (dropped.length) {
-    console.log(
-      yellow(`Dropped legacy exercise history table(s): ${dropped.join(", ")}`)
-    );
+    logger.warn({ dropped }, "dropped legacy exercise history tables");
   }
-  console.log(green("Synced db."));
+  logger.info("db synced");
 
   require("./src/routes/user_route")(app);
   require("./src/routes/user_workout_route")(app);
+  require("./src/routes/bodyweight_route")(app);
 
   const server = http.createServer(app);
   server.on("error", (err) => {
-    console.error("Failed to start server: " + err.message);
+    logger.error({ err }, "failed to start server");
     process.exitCode = 1;
   });
   server.listen(PORT, () => {
-    console.log(green(`Server listening on port ${PORT} at ${getFullDate()}`));
+    logger.info({ port: PORT, time: getFullDate() }, "server listening");
   });
 }
 
 startServer().catch((err) => {
-  console.error("Failed to start server: " + err.message);
+  logger.error({ err }, "failed to start server");
 });

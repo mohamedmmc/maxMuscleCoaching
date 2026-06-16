@@ -15,6 +15,7 @@ import 'package:max_muscle_coaching_front/widgets/exercise_motion_fullscreen_vie
 import 'package:max_muscle_coaching_front/widgets/glass_dock.dart';
 import 'package:max_muscle_coaching_front/widgets/primary_button.dart';
 
+import 'components/workout_celebration_screen.dart';
 import 'workout_controller.dart';
 
 part 'components/workout_preview_view.dart';
@@ -65,6 +66,21 @@ class WorkoutScreen extends StatelessWidget {
               message: controller.finishErrorMessage ?? 'Please try again.',
             );
             return;
+          }
+
+          if (context.mounted && !controller.workoutAlreadyDone) {
+            final exerciseCount = w.exercises.length;
+            final pointsEarned = 100 + exerciseCount * 5;
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (_) => WorkoutCelebrationScreen(
+                  workoutName: w.template?.name ?? 'Workout',
+                  pointsEarned: pointsEarned,
+                  streak: controller.lastFinishStreak,
+                ),
+              ),
+            );
           }
           onWorkoutFinished();
         }

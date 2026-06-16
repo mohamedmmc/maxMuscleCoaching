@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:max_muscle_coaching_front/helper/helper.dart';
 import 'package:max_muscle_coaching_front/networking/logger_service.dart';
 import 'package:max_muscle_coaching_front/services/connectivity_service.dart';
+import 'package:max_muscle_coaching_front/services/secure_token_storage.dart';
 import 'package:max_muscle_coaching_front/services/shared_preferences.dart';
 import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
 import 'package:max_muscle_coaching_front/storage/shared_preferences_keys.dart';
@@ -31,7 +32,7 @@ extension RequestTypeExtension on RequestType {
   }
 }
 
-const String ip = '192.168.1.73';
+const String ip = '192.168.1.20';
 // const String ip = '192.168.100.8';
 
 const String baseUrlLocalWeb = 'http://localhost:3001'; // web localhost
@@ -73,7 +74,7 @@ class ApiBaseHelper extends GetxController {
     update();
   }
 
-  String? getToken() => SharedPreferencesService.find.get(jwtKey);
+  String? getToken() => SecureTokenStorage.find.jwt;
 
   bool _isAuthFailure(http.Response response) {
     if (response.statusCode == 401) return true;
@@ -97,7 +98,7 @@ class ApiBaseHelper extends GetxController {
     _tokenRefreshInFlight = () async {
       await Helper.waitAndExecute(() => SharedPreferencesService.find.isReady, () {});
 
-      final savedRefreshToken = SharedPreferencesService.find.get(refreshTokenKey);
+      final savedRefreshToken = SecureTokenStorage.find.refreshToken;
       if (savedRefreshToken == null || savedRefreshToken.isEmpty) return false;
 
       final requestUrl = Uri.parse('$baseUrl/users/renew');
@@ -105,16 +106,17 @@ class ApiBaseHelper extends GetxController {
       refreshHeaders.remove('Authorization');
       refreshHeaders['locale'] = Get.locale?.languageCode ?? 'en';
 
-      final response = await http.post(
-        requestUrl,
-        body: jsonEncode({refreshTokenKey: savedRefreshToken}),
-        headers: refreshHeaders,
-      );
+      final response = await http
+          .post(
+            requestUrl,
+            body: jsonEncode({refreshTokenKey: savedRefreshToken}),
+            headers: refreshHeaders,
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         if (response.statusCode == 401 || response.statusCode == 403) {
-          SharedPreferencesService.find.removeKey(jwtKey);
-          SharedPreferencesService.find.removeKey(refreshTokenKey);
+          await SecureTokenStorage.find.clear();
         }
         return false;
       }
@@ -126,10 +128,10 @@ class ApiBaseHelper extends GetxController {
       final newToken = decoded['token']?.toString();
       if (newToken == null || newToken.isEmpty) return false;
 
-      SharedPreferencesService.find.add(jwtKey, newToken);
+      await SecureTokenStorage.find.setJwt(newToken);
       final newRefreshToken = decoded['refreshToken']?.toString();
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
-        SharedPreferencesService.find.add(refreshTokenKey, newRefreshToken);
+        await SecureTokenStorage.find.setRefreshToken(newRefreshToken);
       }
 
       return true;
@@ -211,7 +213,7 @@ class ApiBaseHelper extends GetxController {
         } else {
           LoggerService.logger!.w('uploadFile body is not a Map<String, dynamic>');
         }
-        final streamedResponse = await imageUploadRequest.send();
+        final streamedResponse = await imageUploadRequest.send().timeout(const Duration(seconds: 60));
         final responseData = await streamedResponse.stream.bytesToString();
         response = http.Response(
           responseData,
@@ -223,37 +225,46 @@ class ApiBaseHelper extends GetxController {
           request: streamedResponse.request,
         );
       } else {
+        const requestTimeout = Duration(seconds: 15);
         switch (requestType) {
           case RequestType.get:
             LoggerService.logger!.i('API Get, url $url');
-            response = await http.get(
-              requestUrl,
-              headers: headers ?? _defaultHeader,
-            );
+            response = await http
+                .get(
+                  requestUrl,
+                  headers: headers ?? _defaultHeader,
+                )
+                .timeout(requestTimeout);
             break;
           case RequestType.post:
             LoggerService.logger!.i('API Post, url $url');
-            response = await http.post(
-              requestUrl,
-              body: jsonEncode(body),
-              headers: headers ?? _defaultHeader,
-            );
+            response = await http
+                .post(
+                  requestUrl,
+                  body: jsonEncode(body),
+                  headers: headers ?? _defaultHeader,
+                )
+                .timeout(requestTimeout);
             break;
           case RequestType.put:
             LoggerService.logger!.i('API Put, url $url');
-            response = await http.put(
-              requestUrl,
-              body: jsonEncode(body),
-              headers: headers ?? _defaultHeader,
-            );
+            response = await http
+                .put(
+                  requestUrl,
+                  body: jsonEncode(body),
+                  headers: headers ?? _defaultHeader,
+                )
+                .timeout(requestTimeout);
             break;
           case RequestType.delete:
             LoggerService.logger!.i('API Delete, url $url');
-            response = await http.delete(
-              requestUrl,
-              body: body != null ? jsonEncode(body) : null,
-              headers: headers ?? _defaultHeader,
-            );
+            response = await http
+                .delete(
+                  requestUrl,
+                  body: body != null ? jsonEncode(body) : null,
+                  headers: headers ?? _defaultHeader,
+                )
+                .timeout(requestTimeout);
             break;
         }
       }

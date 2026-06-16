@@ -45,6 +45,15 @@ class _PreviewView extends StatelessWidget {
                   workout.focus.toUpperCase(),
                   style: AppTextStyles.display(size: 34, letterSpacing: -1.2),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  _whyThisWorkout(workout),
+                  style: AppTextStyles.body(
+                    size: 13,
+                    color: AppColors.grey500,
+                    height: 1.4,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -99,6 +108,33 @@ class _PreviewView extends StatelessWidget {
       ),
     );
   }
+}
+
+String _whyThisWorkout(DailyWorkout w) {
+  final tpl = w.template;
+  final parts = <String>[];
+
+  final category = w.category.trim();
+  if (category.isNotEmpty && category.toLowerCase() != 'rest') {
+    parts.add('$category day');
+  }
+
+  if (tpl?.split != null && tpl!.split!.trim().isNotEmpty) {
+    parts.add('from your ${tpl.split} schedule');
+  }
+
+  if (tpl?.fitnessLevel != null && tpl!.fitnessLevel!.trim().isNotEmpty) {
+    parts.add('matched to ${tpl.fitnessLevel} level');
+  }
+
+  if (tpl?.estimatedDurationMinutes != null && tpl!.estimatedDurationMinutes! > 0) {
+    parts.add('~${tpl.estimatedDurationMinutes} min');
+  } else if (w.exercises.isNotEmpty) {
+    parts.add('${w.exercises.length} exercise${w.exercises.length == 1 ? '' : 's'}');
+  }
+
+  if (parts.isEmpty) return 'Today\'s session, picked just for you.';
+  return '${parts.join(' · ')}.';
 }
 
 class _PreviewExerciseRow extends StatelessWidget {

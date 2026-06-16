@@ -2,6 +2,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:get/get.dart';
 import 'package:max_muscle_coaching_front/helper/helper.dart';
+import 'package:max_muscle_coaching_front/models/dto/bodyweight_entry.dart';
 import 'package:max_muscle_coaching_front/models/dto/login_dto.dart';
 import 'package:max_muscle_coaching_front/models/dto/mail_model.dart';
 import 'package:max_muscle_coaching_front/models/user_model.dart';
@@ -9,9 +10,9 @@ import 'package:max_muscle_coaching_front/networking/api_base_helper.dart';
 import 'package:max_muscle_coaching_front/networking/api_exceptions.dart';
 import 'package:max_muscle_coaching_front/networking/logger_service.dart';
 import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
+import 'package:max_muscle_coaching_front/services/secure_token_storage.dart';
 import 'package:max_muscle_coaching_front/services/shared_preferences.dart';
 import 'package:max_muscle_coaching_front/services/snackbar_service.dart';
-import 'package:max_muscle_coaching_front/storage/shared_preferences_keys.dart';
 
 class UserRepository extends GetxService {
   static UserRepository get find => Get.find<UserRepository>();
@@ -84,10 +85,52 @@ class UserRepository extends GetxService {
     return null;
   }
 
+  Future<BodyweightEntry?> logBodyweight({required double weight, String? dateLogged}) async {
+    try {
+      final body = <String, dynamic>{
+        'weight': weight,
+        if (dateLogged != null) 'dateLogged': dateLogged,
+      };
+      final result = await ApiBaseHelper().request(
+        RequestType.post,
+        '/users/bodyweight',
+        body: body,
+        sendToken: true,
+      );
+      if (result is Map) {
+        return BodyweightEntry.fromJson(result.cast<String, dynamic>());
+      }
+      return null;
+    } catch (e) {
+      LoggerService.logger?.e('Error occurred in logBodyweight:\n$e');
+      return null;
+    }
+  }
+
+  Future<List<BodyweightEntry>> listBodyweight({int days = 90}) async {
+    try {
+      final result = await ApiBaseHelper().request(
+        RequestType.get,
+        '/users/bodyweight?days=$days',
+        sendToken: true,
+      );
+      if (result is Map && result['data'] is List) {
+        return (result['data'] as List)
+            .whereType<Map>()
+            .map((e) => BodyweightEntry.fromJson(e.cast<String, dynamic>()))
+            .toList(growable: false);
+      }
+      return const [];
+    } catch (e) {
+      LoggerService.logger?.e('Error occurred in listBodyweight:\n$e');
+      return const [];
+    }
+  }
+
   Future<String?> checkFCM() async {
     try {
       Helper.waitAndExecute(() => SharedPreferencesService.find.isReady, () async {
-        final jwt = SharedPreferencesService.find.get(jwtKey);
+        final jwt = SecureTokenStorage.find.jwt;
         final userId = jwt != null ? JWT.decode(jwt).payload['id'] : null;
         String? token; //= SharedPreferencesService.find.get('fcmToken') != null ? await FirebaseMessaging.instance.getToken() : '';
         final result = await ApiBaseHelper().request(RequestType.post, '/users/check-fcm', body: {'id': userId, 'token': token});
