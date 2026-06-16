@@ -59,7 +59,7 @@ class AppController extends GetxController {
 
       if (activeJwt != null && !JwtDecoder.isExpired(activeJwt)) {
         user = User.fromToken(JwtDecoder.decode(activeJwt));
-        final remoteUser = await UserRepository.find.getLoggedInUser();
+        final remoteUser = await UserRepository.find.profile();
         if (remoteUser != null) user = remoteUser;
       }
     }
@@ -94,7 +94,7 @@ class AppController extends GetxController {
         }
       }
       if (!JwtDecoder.isExpired(activeJwt)) {
-        final remoteUser = await UserRepository.find.getLoggedInUser();
+        final remoteUser = await UserRepository.find.profile();
         if (remoteUser != null) {
           user = remoteUser;
           update();
@@ -111,7 +111,7 @@ class AppController extends GetxController {
     user = User.fromToken(JwtDecoder.decode(jwt));
     update();
 
-    final remoteUser = await UserRepository.find.getLoggedInUser();
+    final remoteUser = await UserRepository.find.profile();
     if (remoteUser != null) {
       user = remoteUser;
       update();

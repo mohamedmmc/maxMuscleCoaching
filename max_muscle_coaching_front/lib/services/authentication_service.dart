@@ -168,7 +168,7 @@ class AuthenticationService extends GetxController {
     return await Helper.waitAndExecute(
       () => SharedPreferencesService.find.isReady && AuthenticationService.find.jwtClientData?.id != null,
       () async {
-        final loggedInClient = await UserRepository.find.getLoggedInUser();
+        final loggedInClient = await UserRepository.find.profile();
         if (loggedInClient?.id != null) {
           isUserVerified = await UserRepository.find.checkVerifiedUser();
         }

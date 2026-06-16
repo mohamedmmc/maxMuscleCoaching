@@ -230,26 +230,6 @@ class UserRepository extends GetxService {
     return false;
   }
 
-  Future<User?> getLoggedInUser() async {
-    try {
-      final result = await ApiBaseHelper().request(RequestType.get, '/users/profile', sendToken: true);
-      return User.fromJson(result['client']);
-    } catch (e) {
-      LoggerService.logger?.e('Error occurred in getLoggedInUser:\n$e');
-      return null;
-    }
-  }
-
-  Future<User?> getUserById(int id) async {
-    try {
-      final result = await ApiBaseHelper().request(RequestType.get, '/users/user-id?id=$id', sendToken: true);
-      return User.fromJson(result['client']);
-    } catch (e) {
-      LoggerService.logger?.e('Error occurred in getUserById:\n$e');
-      return null;
-    }
-  }
-
   Future<User?> linkWithSocial(User user) async {
     try {
       final result = await ApiBaseHelper().request(RequestType.post, '/users/social-media', body: user.toSocialJson(), sendToken: true);
