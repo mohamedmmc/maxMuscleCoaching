@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-class PrimaryButton extends StatelessWidget {
+class PrimaryButton extends StatefulWidget {
   const PrimaryButton({
     required this.label,
     required this.onPressed,
@@ -19,19 +19,32 @@ class PrimaryButton extends StatelessWidget {
   final Widget? trailing;
 
   @override
+  State<PrimaryButton> createState() => _PrimaryButtonState();
+}
+
+class _PrimaryButtonState extends State<PrimaryButton> {
+  // Set synchronously inside the tap handler, before the parent has a chance
+  // to flip isLoading. Reset on every rebuild so the next press works.
+  bool _isFiring = false;
+
+  void _handlePress() {
+    if (_isFiring) return;
+    _isFiring = true;
+    HapticFeedback.mediumImpact();
+    widget.onPressed?.call();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final base = isLoading ? null : onPressed;
-    final effectiveOnPressed = base == null
-        ? null
-        : () {
-            HapticFeedback.mediumImpact();
-            base();
-          };
+    _isFiring = false;
+
+    final canPress = !widget.isLoading && widget.onPressed != null;
+    final effectiveOnPressed = canPress ? _handlePress : null;
 
     return Semantics(
       button: true,
       enabled: effectiveOnPressed != null,
-      label: isLoading ? '$label, loading' : label,
+      label: widget.isLoading ? '${widget.label}, loading' : widget.label,
       excludeSemantics: true,
       child: FilledButton(
         style: FilledButton.styleFrom(
@@ -50,7 +63,7 @@ class PrimaryButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isLoading) ...[
+            if (widget.isLoading) ...[
               const SizedBox(
                 width: 18,
                 height: 18,
@@ -61,10 +74,10 @@ class PrimaryButton extends StatelessWidget {
               ),
               const SizedBox(width: 10),
             ],
-            Text(label.toUpperCase()),
-            if (!isLoading && trailing != null) ...[
+            Text(widget.label.toUpperCase()),
+            if (!widget.isLoading && widget.trailing != null) ...[
               const SizedBox(width: 8),
-              trailing!,
+              widget.trailing!,
             ],
           ],
         ),
