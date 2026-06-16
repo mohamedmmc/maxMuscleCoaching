@@ -35,6 +35,29 @@ Rotate **all of them** if any of the following ever happened:
 
 `.dockerignore` now excludes `.env*`, `.git`, `node_modules`, logs, tests, docs. Build images from a clean checkout; inject runtime secrets via `docker run --env-file <path-outside-image>` or a secrets manager (Doppler, AWS Secrets Manager, Vault).
 
+## Android release signing
+
+`android/app/build.gradle` now loads `android/key.properties` (gitignored) and uses it for the `release` build type. Without `key.properties`, the build falls back to debug keys — Play Store will reject those, so do this BEFORE shipping:
+
+1. Generate an upload keystore **outside the repo**:
+   ```bash
+   keytool -genkey -v -keystore ~/keys/max-muscle-upload.jks \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+
+2. Copy the template:
+   ```bash
+   cp max_muscle_coaching_front/android/key.properties.example \
+      max_muscle_coaching_front/android/key.properties
+   ```
+   Fill in `storePassword`, `keyPassword`, `keyAlias=upload`, and the absolute path to the `.jks`.
+
+3. Enroll in **Play App Signing** on the first upload so Google holds the app signing key — losing the upload key then only means rotating the upload key, not losing the app forever.
+
+4. Back up `key.properties` + the `.jks` to a password manager / secrets vault. Never commit them. Never let CI cache them outside of secret stores.
+
+5. Verify with `./gradlew signingReport` from `max_muscle_coaching_front/android`.
+
 ## Reporting vulnerabilities
 
 Email the maintainer privately rather than opening a public issue.

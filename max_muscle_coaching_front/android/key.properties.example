@@ -1,0 +1,13 @@
+# Copy to android/key.properties (gitignored) and fill in the real values.
+# Generate the keystore once (outside the repo) with:
+#   keytool -genkey -v -keystore ~/keys/max-muscle-upload.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# Then enroll in Play App Signing on first upload so Google holds the app
+# signing key and you only own the upload key.
+
+storePassword=
+keyPassword=
+keyAlias=upload
+# Absolute path is safest — never put the keystore inside the repo.
+storeFile=/Users/you/keys/max-muscle-upload.jks
