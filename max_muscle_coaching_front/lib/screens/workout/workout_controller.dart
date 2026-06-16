@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import 'package:max_muscle_coaching_front/controllers/app_controller.dart';
@@ -145,6 +146,8 @@ class WorkoutController extends GetxController {
   void adjustRestTimerBySeconds(int deltaSeconds) {
     final endTimeMs = _restEndTimeMs;
     if (endTimeMs == null) return;
+
+    HapticFeedback.selectionClick();
 
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     final nextEndTimeMs = endTimeMs + (deltaSeconds * 1000);
@@ -367,12 +370,21 @@ class WorkoutController extends GetxController {
     _restTimer?.cancel();
     _restTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!isRestTimerActive) {
+        _fireRestExpiredHaptics();
         _clearRestTimer(notify: true);
         return;
       }
       update([restTimerUpdateId]);
     });
     update([restTimerUpdateId]);
+  }
+
+  // Unmissable triple-tap when the rest countdown reaches zero — users
+  // typically look away during rest, so a single soft tap gets missed.
+  void _fireRestExpiredHaptics() {
+    HapticFeedback.heavyImpact();
+    Timer(const Duration(milliseconds: 150), HapticFeedback.mediumImpact);
+    Timer(const Duration(milliseconds: 300), HapticFeedback.mediumImpact);
   }
 
   void _clearRestTimer({required bool notify}) {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import '../models/models.dart';
 import '../theme/app_colors.dart';
@@ -261,8 +262,10 @@ class _ExerciseCardState extends State<ExerciseCard> {
     if (weight == null || reps == null) return;
 
     final willCompleteExercise = widget.exercise.sets > 0 && (_completedSets() + 1) >= widget.exercise.sets;
+    HapticFeedback.lightImpact();
     widget.onLogSet(setIndex, weight, reps);
     if (willCompleteExercise) {
+      HapticFeedback.mediumImpact();
       widget.onExerciseCompleted?.call();
     }
   }

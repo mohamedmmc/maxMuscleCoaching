@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -19,7 +20,13 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveOnPressed = isLoading ? null : onPressed;
+    final base = isLoading ? null : onPressed;
+    final effectiveOnPressed = base == null
+        ? null
+        : () {
+            HapticFeedback.mediumImpact();
+            base();
+          };
 
     return Semantics(
       button: true,
