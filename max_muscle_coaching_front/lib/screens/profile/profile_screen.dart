@@ -32,7 +32,11 @@ class ProfileScreen extends StatelessWidget {
                 headerStyle.copyWith(color: AppColors.volt);
 
             return SafeArea(
-              child: SingleChildScrollView(
+              child: RefreshIndicator(
+                color: AppColors.volt,
+                onRefresh: profileController.loadProfile,
+                child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                     20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
                 child: Column(
@@ -233,6 +237,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             );
           },

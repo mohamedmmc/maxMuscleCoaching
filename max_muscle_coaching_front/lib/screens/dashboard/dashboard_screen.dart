@@ -100,7 +100,14 @@ class DashboardScreen extends StatelessWidget {
                 avgDuration?.toString() ?? '$fallbackAvgDuration';
 
             return SafeArea(
-              child: SingleChildScrollView(
+              child: RefreshIndicator(
+                color: AppColors.volt,
+                onRefresh: () => Future.wait<void>([
+                  dashboard.loadWorkoutStats(),
+                  dashboard.loadBodyweightHistory(),
+                ]),
+                child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                     20, 18, 20, GlassDock.heightWithinSafeArea(context) + 32),
                 child: Column(
@@ -315,6 +322,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             );
           },
