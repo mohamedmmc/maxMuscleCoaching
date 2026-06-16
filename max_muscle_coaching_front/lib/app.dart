@@ -22,6 +22,18 @@ class MaxMuscleApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Max Muscle Coaching',
       debugShowCheckedModeBanner: false,
+      // Clamp OS-level font scaling so the glass cards (hero, mini-stats,
+      // dashboard tiles) don't blow out their constraints at large
+      // accessibility text sizes — keeps the floor reasonable too.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: MediaQuery.textScalerOf(context).clamp(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.3,
+          ),
+        ),
+        child: child ?? const SizedBox.shrink(),
+      ),
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.dark,
