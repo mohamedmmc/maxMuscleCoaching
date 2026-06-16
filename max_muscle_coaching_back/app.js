@@ -24,14 +24,7 @@ dotenv.config();
 // const
 
 const app = express();
-app.get("/public/exercises/:id/images/:imageId", (req, res) => {
-  res.sendFile(
-    path.join(
-      __dirname,
-      `./public/exercises/${req.params.id}/images/${req.params.imageId}`
-    )
-  );
-});
+
 // Middleware
 app.use(bodyParser.json());
 
@@ -54,5 +47,25 @@ app.use(
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.text({ type: "application/xml" }));
+
+// Exercise images: strict allow-list + res.sendFile root to neutralize traversal.
+const EXERCISES_ROOT = path.join(__dirname, "public", "exercises");
+const SAFE_FOLDER = /^[A-Za-z0-9_-]{1,128}$/;
+const SAFE_IMAGE = /^[A-Za-z0-9_-]{1,128}\.(jpe?g|png|gif|webp)$/i;
+
+app.get("/public/exercises/:id/images/:imageId", (req, res) => {
+  const { id, imageId } = req.params;
+  if (!SAFE_FOLDER.test(id) || !SAFE_IMAGE.test(imageId)) {
+    return res.status(400).end();
+  }
+  res.set("Cache-Control", "public, max-age=86400");
+  res.sendFile(
+    `${id}/images/${imageId}`,
+    { root: EXERCISES_ROOT, dotfiles: "deny" },
+    (err) => {
+      if (err && !res.headersSent) res.status(404).end();
+    }
+  );
+});
 
 module.exports = app;
