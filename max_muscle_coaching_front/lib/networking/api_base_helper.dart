@@ -39,23 +39,28 @@ const String baseUrlLocalWeb = 'http://localhost:3001'; // web localhost
 const String baseUrlLocalAndroid = 'http://$ip:3001'; // android localhost
 const String baseUrlLocalIos = 'http://$ip:3001'; // ios localhost
 const String realDevice = 'http://$ip:3001'; // real device ip address
-const String baseUrlRemote = 'https://api.thelandlord.tn'; // remote
-// const String baseUrlRemote = 'https://api-test.thelandlord.tn'; // remote
+
+// Production host must be injected at build time:
+//   flutter build ... --dart-define=API_BASE_URL=https://api.yourdomain.tld
+// Empty default so a misconfigured build fails fast instead of silently
+// pointing at the wrong domain.
+const String _apiBaseUrlOverride =
+    String.fromEnvironment('API_BASE_URL', defaultValue: '');
+const String baseUrlRemote = '';
 String _lastRequestedUrl = '';
 
 class ApiBaseHelper extends GetxController {
   static ApiBaseHelper get find => Get.find<ApiBaseHelper>();
   static Future<bool>? _tokenRefreshInFlight;
-  // final String baseUrl = baseUrlLocalWeb;
-  final String baseUrl = kReleaseMode
-      ? baseUrlRemote
-      : kIsWeb
-          ? baseUrlLocalWeb
-          : GetPlatform.isAndroid
-              ? baseUrlLocalAndroid
-              : GetPlatform.isIOS
-                  ? baseUrlLocalIos
-                  : '';
+
+  String get baseUrl {
+    if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
+    if (kReleaseMode) return baseUrlRemote;
+    if (kIsWeb) return baseUrlLocalWeb;
+    if (GetPlatform.isAndroid) return baseUrlLocalAndroid;
+    if (GetPlatform.isIOS) return baseUrlLocalIos;
+    return '';
+  }
   bool _isLoading = false;
   bool blockRequest = false;
   final _defaultHeader = {
