@@ -73,45 +73,38 @@ exports.signIn = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "client_not_found" });
     }
-    if (googleId && user.googleId != googleId) {
-      user.googleId = googleId;
-    }
-    if (facebookId && user.facebookId != facebookId) {
-      user.facebookId = facebookId;
-    }
-    if (!googleId && !facebookId && (email || formattedPhoneNumber)) {
-      // If neither googleId nor facebookId matches, verify traditionally with email and password
+    // Social identity linking (writing googleId/facebookId/appleId onto an
+    // existing account) is intentionally NOT done here: req.body is attacker
+    // controlled, and silently linking a fresh id at sign-in is an account
+    // hijack. Linking a new provider requires a separate authenticated
+    // /users/link-social endpoint.
+    if (googleId) {
+      if (!user.googleId || user.googleId !== googleId) {
+        return res.status(401).json({ message: "invalid_credentials" });
+      }
+    } else if (facebookId) {
+      if (!user.facebookId || user.facebookId !== facebookId) {
+        return res.status(401).json({ message: "invalid_credentials" });
+      }
+    } else if (appleId) {
+      if (!user.appleId || user.appleId !== appleId) {
+        return res.status(401).json({ message: "invalid_credentials" });
+      }
+    } else if (email || formattedPhoneNumber) {
       if (!password) {
         return res.status(400).json({ message: "missing_password" });
       }
       const isPasswordValid = user.password
         ? await Bcrypt.compare(password, user.password)
-        : undefined;
+        : false;
       if (!isPasswordValid) {
         return res.status(401).json({ message: "invalid_credentials" });
       }
-    } else if (!googleId && !facebookId && !appleId) {
+    } else {
       return res.status(400).json({ message: "missing_credentials" });
     }
+
     let token, refreshToken;
-
-    // if (picture) {
-    //   const pictureName = `${extractIdFromGoogleUrl(picture)}.jpg`;
-    //   if (user.picture !== pictureName) {
-    //     try {
-    //       const name = await downloadImage(picture);
-    //       await saveImage(pictureName, name, "client");
-    //       user.picture = pictureName;
-    //     } catch (error) {
-    //       console.error("Error downloading image:", error);
-    //     }
-    //   }
-    // }
-    // if (!user.isVerified) {
-    //   resendConfirmationMail(user, req.hostname);
-    // }
-    await user.save();
-
     token = await generateJWT(user);
 
     if (stayLoggedIn) refreshToken = await generateJWT(user, true);
