@@ -11,3 +11,4 @@ const String dateFromKey = 'dateFrom';
 const String dateToKey = 'dateTo';
 const String hideDiscountDialog = 'hide_discount_dialog';
 const String rememberScreenKey = 'rememberScreenKey';
+const String activeSessionKey = 'active_workout_session';

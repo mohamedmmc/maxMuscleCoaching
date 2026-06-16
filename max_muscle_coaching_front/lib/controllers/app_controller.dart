@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:max_muscle_coaching_front/models/user_model.dart';
@@ -61,11 +63,33 @@ class AppController extends GetxController {
         user = User.fromToken(JwtDecoder.decode(activeJwt));
         final remoteUser = await UserRepository.find.profile();
         if (remoteUser != null) user = remoteUser;
+        _rehydrateActiveSession();
       }
     }
 
     isReady = true;
     update();
+  }
+
+  // Restore an in-progress workout from SharedPreferences. Drop sessions
+  // older than 24h so a stale row never resurrects after the user has moved
+  // on (typical bedtime → next-morning cold-start window).
+  static const int _activeSessionMaxAgeMs = 24 * 60 * 60 * 1000;
+
+  void _rehydrateActiveSession() {
+    final raw = SharedPreferencesService.find.get(activeSessionKey);
+    if (raw == null || raw.isEmpty) return;
+    final session = ActiveWorkoutSession.tryParse(raw);
+    if (session == null) {
+      SharedPreferencesService.find.removeKey(activeSessionKey);
+      return;
+    }
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - session.startTimeMs > _activeSessionMaxAgeMs) {
+      SharedPreferencesService.find.removeKey(activeSessionKey);
+      return;
+    }
+    activeSession = session;
   }
 
   Future<void> refreshConnectivity() async {
@@ -120,17 +144,23 @@ class AppController extends GetxController {
 
   Future<void> saveActiveSession(ActiveWorkoutSession session) async {
     activeSession = session;
+    SharedPreferencesService.find.add(
+      activeSessionKey,
+      jsonEncode(session.toJson()),
+    );
     update();
   }
 
   Future<void> clearActiveSession() async {
     activeSession = null;
+    SharedPreferencesService.find.removeKey(activeSessionKey);
     update();
   }
 
   Future<void> finishWorkout(WorkoutSessionLog log) async {
     logs = [...logs, log];
     activeSession = null;
+    SharedPreferencesService.find.removeKey(activeSessionKey);
     update();
   }
 
@@ -139,6 +169,7 @@ class AppController extends GetxController {
 
     logs = const [];
     activeSession = null;
+    SharedPreferencesService.find.removeKey(activeSessionKey);
     user = null;
     update();
   }
