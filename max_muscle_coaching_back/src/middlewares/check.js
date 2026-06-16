@@ -31,7 +31,7 @@ function check(req, res, next) {
     : authorization;
 
   try {
-    req.decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
     return next();
   } catch (error) {
     return res.status(403).json({ message: "invalid_token" });

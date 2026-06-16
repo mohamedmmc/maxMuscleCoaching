@@ -25,6 +25,7 @@
     "fs-extra": "^11.2.0",
     "ical": "^0.8.0",
     "ical-generator": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",
     "mysql2": "^3.9.4",
     "node-cron": "^3.0.3",

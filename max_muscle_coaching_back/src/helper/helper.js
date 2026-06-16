@@ -15,7 +15,7 @@ function removeSpacesFromPhoneNumber(phoneNumber) {
 }
 
 async function generateJWT(response, isRefresh) {
-  return (token = jwt.sign(
+  return jwt.sign(
     {
       id: response.id,
       picture: response.picture,
@@ -26,11 +26,12 @@ async function generateJWT(response, isRefresh) {
     },
     process.env.JWT_SECRET,
     {
+      algorithm: "HS256",
       expiresIn: isRefresh
         ? process.env.JWT_REFRESH_EXPIRATION
         : process.env.JWT_EXPIRATION,
     }
-  ));
+  );
 }
 
 function extractIdFromGoogleUrl(url) {

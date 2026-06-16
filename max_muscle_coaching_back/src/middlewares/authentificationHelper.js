@@ -25,7 +25,7 @@ function tokenVerification(req, res, next) {
     token = token.slice(bearerPrefix.length);
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] }, (err, decoded) => {
     if (err) {
       return res.status(403).json({ success: false, message: "session_expired" });
     }
@@ -43,7 +43,7 @@ function refreshTokenVerification(req, res, next) {
     return res.status(403).json({ message: "no_token_provided" });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] }, (err, decoded) => {
     if (err) {
       return res.status(406).json({ success: false, message: "session_expired" });
     }
@@ -67,7 +67,7 @@ function tokenGetId(req, res, next) {
   }
 
   try {
-    req.decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
   } catch {
     // ignore
   }
